@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { formatPrice, type Product } from "@/app/lib/products";
 import { useStore } from "./StoreProvider";
 
@@ -13,9 +12,9 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="product-card">
       <div className="product-image-wrap">
-        <Link href={`/products/${product.id}`} aria-label={`${product.name} 상세보기`}>
+        <a href={`/products/${product.id}`} aria-label={`${product.name} 상세보기`}>
           <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" />
-        </Link>
+        </a>
         <button
           type="button"
           className={`favorite-button ${isFavorite ? "selected" : ""}`}
@@ -28,7 +27,7 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
       <div className="product-content">
         <p className="product-code">{product.id.slice(0, 8).toUpperCase()}</p>
-        <Link href={`/products/${product.id}`} className="product-name">{product.name}</Link>
+        <a href={`/products/${product.id}`} className="product-name">{product.name}</a>
         <div className="price-block"><strong>{formatPrice(product.consumerPrice)}</strong><span>VAT 포함</span></div>
         <p className="unit-copy">최소 {product.minOrder}단 · {product.unit}</p>
         <div className="product-order-row">

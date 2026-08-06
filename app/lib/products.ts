@@ -61,7 +61,7 @@ export const products: Product[] = [
     name: "유칼립투스 롱 브랜치",
     category: "그린소재",
     color: "그레이그린",
-    image: "https://images.unsplash.com/photo-1509423350716-97f2360af8e4?auto=format&fit=crop&w=1000&q=88",
+    image: "/home-hero.png",
     consumerPrice: 1800,
     businessPrice: 1400,
     unit: "6개 / 1단",

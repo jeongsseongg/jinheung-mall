@@ -35,7 +35,6 @@ const categoryFor = (unit: string) => {
 };
 
 export const products: Product[] = productSeeds.map((seed, index) => {
-  const doubledPrice = seed.basePrice * 2;
   const id = `oraedam-${String(index + 1).padStart(2, "0")}`;
 
   return {
@@ -44,8 +43,8 @@ export const products: Product[] = productSeeds.map((seed, index) => {
     category: categoryFor(seed.unit),
     color: seed.color,
     image: null,
-    consumerPrice: doubledPrice,
-    businessPrice: doubledPrice,
+    consumerPrice: seed.basePrice,
+    businessPrice: seed.basePrice,
     unit: seed.unit,
     minOrder: 1,
     stock: "충분",

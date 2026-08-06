@@ -8,6 +8,8 @@ import { useStore } from "./StoreProvider";
 export function ProductDetailClient({ product }: { product: Product }) {
   const { role, addToCart, favorites, toggleFavorite } = useStore();
   const [quantity, setQuantity] = useState(product.minOrder);
+  const colorOptions = product.color.split(",").map((color) => color.trim()).filter(Boolean);
+  const [selectedColor, setSelectedColor] = useState(colorOptions[0] ?? "");
   const isBusiness = role === "business";
   const price = isBusiness ? product.businessPrice : product.consumerPrice;
   const isFavorite = favorites.includes(product.id);
@@ -21,11 +23,17 @@ export function ProductDetailClient({ product }: { product: Product }) {
           <span>{product.image ? "예시 상품 이미지" : "상품 이미지 준비 중"}</span>
         </div>
         <div className="detail-info">
-          <p className="product-meta">{product.category} · {product.color}</p>
+          <p className="product-meta">{product.category} · {selectedColor || product.color}</p>
           <h1>{product.name}</h1>
           <p className="detail-description">{product.description}</p>
           <div className="detail-price"><span>{isBusiness ? "사업자 회원가" : "일반 회원가"}</span><strong>{formatPrice(price)}</strong><small>VAT 표시 방식 추후 관리자 설정</small></div>
           {!isBusiness && <Link href="/business-verification" className="price-benefit">사업자 인증 시 {formatPrice(product.consumerPrice - product.businessPrice)} 절약 가능 <b>인증하기 →</b></Link>}
+          <section className="color-option-section" aria-label="색상 선택">
+            <strong>색상 선택</strong>
+            <div>
+              {colorOptions.map((color) => <button type="button" key={color} className={selectedColor === color ? "selected" : ""} aria-pressed={selectedColor === color} onClick={() => setSelectedColor(color)}>{color}</button>)}
+            </div>
+          </section>
           <dl className="detail-specs">
             <div><dt>판매 단위</dt><dd>{product.unit}</dd></div>
             <div><dt>최소 주문</dt><dd>{product.minOrder}단부터</dd></div>

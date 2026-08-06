@@ -243,6 +243,11 @@ img { display: block; max-width: 100%; }
 .detail-info { padding-top: 16px; }
 .detail-info h1 { margin: 0 0 13px; font-size: clamp(30px, 4vw, 46px); line-height: 1.15; letter-spacing: -.055em; }
 .detail-description { margin: 0 0 28px; color: #626269; line-height: 1.7; }
+.color-option-section { margin: 18px 0; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.color-option-section > strong { display: block; margin-bottom: 10px; font-size: 13px; }
+.color-option-section > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.color-option-section button { min-height: 34px; padding: 0 12px; border: 1px solid #d9d9de; border-radius: 6px; background: #fff; font-size: 12px; cursor: pointer; }
+.color-option-section button.selected { border-color: var(--green); background: var(--green); color: #fff; font-weight: 700; }
 .detail-price { padding: 22px 0; display: grid; grid-template-columns: 1fr auto; align-items: end; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .detail-price span { color: var(--muted); font-size: 13px; }
 .detail-price strong { grid-row: 1 / 3; grid-column: 2; font-size: 28px; letter-spacing: -.035em; }

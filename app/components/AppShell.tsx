@@ -8,20 +8,21 @@ const navItems = [
   { href: "/", label: "상품" },
   { href: "/favorites", label: "자주 주문" },
   { href: "/orders", label: "주문내역" },
-  { href: "/business-verification", label: "사업자 인증" },
+  { href: "/login", label: "로그인" },
 ];
 
 function Header() {
   const pathname = usePathname();
   const { cartCount, role } = useStore();
-  const roleLabel = role === "business" ? "사업자 회원" : role === "consumer" ? "일반 회원" : "로그인 전";
+  const isLoggedIn = role !== "guest";
+  const roleLabel = isLoggedIn ? "로그인 완료" : "가격 확인";
 
   return (
     <>
       <div className="top-notice">
-        <span>진흥조화 직영</span>
-        <p>사업자 인증 시 도매 전용 가격으로 구매할 수 있습니다.</p>
-        <Link href="/business-verification">인증하기</Link>
+        <span>가격 안내</span>
+        <p>로그인하면 등록된 상품 가격을 확인할 수 있습니다.</p>
+        <Link href="/login">로그인</Link>
       </div>
       <header className="site-header">
         <div className="header-inner">
@@ -35,7 +36,7 @@ function Header() {
             <button type="submit">검색</button>
           </form>
           <div className="header-actions">
-            <Link href="/login" className="account-link"><span>{roleLabel}</span><strong>로그인·회원정보</strong></Link>
+            <Link href={isLoggedIn ? "/mypage" : "/login"} className="account-link"><span>{roleLabel}</span><strong>{isLoggedIn ? "내 주문정보" : "로그인"}</strong></Link>
             <Link href="/cart" className="cart-link">장바구니 <b>{cartCount}</b></Link>
           </div>
         </div>
@@ -68,10 +69,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <footer className="site-footer">
         <div>
           <strong>진흥몰</strong>
-          <p>진흥조화가 직접 고르고 공급하는 사업자 중심 조화 주문몰</p>
+          <p>진흥조화가 직접 고르고 공급하는 조화 주문몰</p>
         </div>
         <div className="footer-links">
-          <Link href="/business-verification">사업자 인증</Link>
+          <Link href="/login">로그인</Link>
           <Link href="/orders">주문 조회</Link>
           <Link href="/admin">관리자</Link>
         </div>

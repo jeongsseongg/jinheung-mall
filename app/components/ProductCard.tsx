@@ -6,6 +6,7 @@ import { useStore } from "./StoreProvider";
 
 export function ProductCard({ product }: { product: Product }) {
   const { role, favorites, toggleFavorite, addToCart } = useStore();
+  const isLoggedIn = role !== "guest";
   const isBusiness = role === "business";
   const isFavorite = favorites.includes(product.id);
   const price = isBusiness ? product.businessPrice : product.consumerPrice;
@@ -16,10 +17,6 @@ export function ProductCard({ product }: { product: Product }) {
         <Link href={`/products/${product.id}`} aria-label={`${product.name} 상세보기`}>
           <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" />
         </Link>
-        <div className="product-badges">
-          {product.isBest && <span className="badge dark">BEST</span>}
-          {product.isNew && <span className="badge light">NEW</span>}
-        </div>
         <button
           type="button"
           className={`favorite-button ${isFavorite ? "selected" : ""}`}
@@ -27,20 +24,16 @@ export function ProductCard({ product }: { product: Product }) {
           aria-label={isFavorite ? "자주 주문에서 삭제" : "자주 주문에 등록"}
           aria-pressed={isFavorite}
         >
-          {isFavorite ? "♥" : "♡"}
+          {isFavorite ? "저장됨" : "저장"}
         </button>
       </div>
       <div className="product-content">
+        {(product.isBest || product.isNew) && <div className="product-status-row">{product.isBest && <span>BEST</span>}{product.isNew && <span>NEW</span>}</div>}
         <p className="product-meta">{product.category} · {product.color}</p>
         <Link href={`/products/${product.id}`} className="product-name">{product.name}</Link>
-        <div className="price-block">
-          <strong>{formatPrice(price)}</strong>
-          {isBusiness ? <span className="business-price-label">사업자가</span> : <span>일반 회원가</span>}
-        </div>
+        {isLoggedIn ? <div className="price-block"><strong>{formatPrice(price)}</strong><span>로그인 회원가</span></div> : <Link href="/login" className="locked-price">로그인 후 가격 확인</Link>}
         <p className="unit-copy">{product.unit} · 최소 {product.minOrder}단</p>
-        <button type="button" className="quick-cart-button" onClick={() => addToCart(product.id, product.minOrder)}>
-          {product.minOrder}단 담기
-        </button>
+        {isLoggedIn ? <button type="button" className="quick-cart-button" onClick={() => addToCart(product.id, product.minOrder)}>{product.minOrder}단 담기</button> : <Link className="quick-cart-button login-cart-link" href="/login">로그인하고 주문</Link>}
       </div>
     </article>
   );

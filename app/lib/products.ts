@@ -39,7 +39,7 @@ export const products: Product[] = productSeeds.map((seed, index) => {
 
   return {
     id,
-    name: `${seed.name} ${seed.unit}`,
+    name: seed.name,
     category: categoryFor(seed.unit),
     color: seed.color,
     image: null,

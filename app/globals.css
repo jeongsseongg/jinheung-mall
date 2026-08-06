@@ -82,7 +82,14 @@ img { display: block; max-width: 100%; }
 .price-access-strip a { font-size: 13px; font-weight: 700; }
 .catalog-section { scroll-margin-top: 150px; }
 .catalog-home { padding-bottom: 30px; }
-.catalog-title-row { margin: 52px 0 32px; display: grid; grid-template-columns: 1fr minmax(360px, 520px); align-items: center; gap: 44px; }
+.catalog-promo-banner { min-height: 190px; margin-top: 22px; position: relative; display: flex; align-items: center; background: #f0f1ee; overflow: hidden; }
+.catalog-promo-banner > img { width: 64%; height: 100%; position: absolute; top: 0; right: 0; object-fit: cover; object-position: center 48%; }
+.catalog-promo-copy { width: 52%; min-height: 190px; padding: 28px 32px; position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: center; background: rgba(245,246,243,.94); }
+.catalog-promo-copy span { margin-bottom: 7px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.catalog-promo-copy strong { font-size: 28px; line-height: 1.16; letter-spacing: -.055em; }
+.catalog-promo-copy p { margin: 9px 0 0; color: #686c69; font-size: 12px; }
+.catalog-promo-banner > a { min-height: 38px; padding: 0 14px; position: absolute; right: 18px; bottom: 18px; z-index: 2; display: inline-flex; align-items: center; background: rgba(23,23,25,.92); color: #fff; font-size: 11px; font-weight: 700; }
+.catalog-title-row { margin: 38px 0 28px; display: grid; grid-template-columns: 1fr minmax(360px, 520px); align-items: center; gap: 44px; }
 .catalog-title-row h1 { margin: 0; font-size: clamp(36px, 4.2vw, 52px); line-height: 1.08; letter-spacing: -.065em; }
 .catalog-main-search { height: 52px; padding-left: 17px; display: flex; align-items: center; border: 1px solid #bfc0c3; background: #fff; }
 .catalog-main-search:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23,23,25,.07); }
@@ -95,6 +102,7 @@ img { display: block; max-width: 100%; }
 .category-toggle { min-height: 34px; padding: 0 10px 0 0; display: inline-flex; align-items: center; gap: 9px; border: 0; background: transparent; cursor: pointer; }
 .category-toggle::before { content: "≡"; font-size: 18px; font-weight: 700; line-height: 1; transform: translateY(-1px); }
 .category-toggle span { font-size: 13px; font-weight: 700; }
+.category-toggle em { color: #919197; font-size: 9px; font-style: normal; font-weight: 500; }
 .category-toggle b { color: var(--muted); font-size: 10px; font-weight: 600; }
 .catalog-body { display: grid; grid-template-columns: minmax(0, 1fr); transition: grid-template-columns 220ms var(--ease-out); }
 .catalog-body.category-is-open { grid-template-columns: 208px minmax(0, 1fr); gap: 26px; }
@@ -489,6 +497,13 @@ img { display: block; max-width: 100%; }
   .store-main { width: calc(100% - 28px); }
   .page-main { padding-top: 30px; padding-bottom: 90px; }
   .catalog-title-row { margin: 26px 0 20px; gap: 16px; }
+  .catalog-promo-banner { min-height: 142px; margin: 12px -14px 0; }
+  .catalog-promo-banner > img { width: 68%; object-position: 58% center; }
+  .catalog-promo-copy { width: 67%; min-height: 142px; padding: 18px 16px 42px; background: rgba(245,246,243,.9); }
+  .catalog-promo-copy span { margin-bottom: 5px; font-size: 8px; }
+  .catalog-promo-copy strong { font-size: 23px; line-height: 1.14; }
+  .catalog-promo-copy p { display: none; }
+  .catalog-promo-banner > a { min-height: 30px; padding: 0 10px; right: auto; bottom: 11px; left: 16px; font-size: 9px; }
   .catalog-title-row h1 { font-size: 34px; }
   .catalog-main-search { height: 46px; padding-left: 13px; }
   .catalog-main-search input { font-size: 12px; }
@@ -497,6 +512,7 @@ img { display: block; max-width: 100%; }
   .catalog-menu-bar > p { font-size: 10px; }
   .category-toggle { gap: 7px; }
   .category-toggle span { font-size: 11px; }
+  .category-toggle em { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .category-panel { grid-template-columns: 1fr; }
   .category-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 18px; }
   .category-list button { font-size: 11px; }

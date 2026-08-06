@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { categories, products, type Product } from "@/app/lib/products";
 import { ProductCard } from "./ProductCard";
 
@@ -33,12 +33,20 @@ const colorGroup = (product: Product) => {
 export function ProductGrid({ compact = false }: { compact?: boolean }) {
   const [category, setCategory] = useState("전체");
   const [sort, setSort] = useState("popular");
-  const [categoryOpen, setCategoryOpen] = useState(true);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [selectedColor, setSelectedColor] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const categoryCounts = useMemo(() => Object.fromEntries(categories.map((item) => [item, item === "전체" ? products.length : products.filter((product) => product.category === item).length])), []);
+
+  useEffect(() => {
+    const mobileView = window.matchMedia("(max-width: 640px)");
+    const applyDefault = () => setCategoryOpen(!mobileView.matches);
+    applyDefault();
+    mobileView.addEventListener("change", applyDefault);
+    return () => mobileView.removeEventListener("change", applyDefault);
+  }, []);
 
   const visibleProducts = useMemo(() => {
     const minimum = minPrice === "" ? 0 : Number(minPrice);
@@ -78,6 +86,7 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
       <div className="catalog-menu-bar">
         <button type="button" className="category-toggle" aria-expanded={categoryOpen} aria-controls="category-panel" onClick={() => setCategoryOpen((open) => !open)}>
           <span>필터</span>
+          <em>{category} · {selectedColor === "all" ? "전체 색상" : colorOptions.find((item) => item.id === selectedColor)?.label}</em>
           <b>{categoryOpen ? "닫기" : "열기"}</b>
         </button>
         <p>총 <strong>{visibleProducts.length}</strong>개 상품</p>

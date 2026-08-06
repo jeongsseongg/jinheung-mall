@@ -13,6 +13,9 @@ export function CatalogSearch() {
     return products.filter((product) => [product.name, product.id, product.category, product.color].some((value) => value.toLocaleLowerCase("ko-KR").includes(normalizedQuery))).slice(0, 6);
   }, [normalizedQuery]);
   const previewOpen = focused && normalizedQuery.length > 0;
+  const openProduct = (productId: string) => {
+    window.location.assign(`/products/${productId}`);
+  };
 
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
@@ -50,10 +53,10 @@ export function CatalogSearch() {
       {previewOpen && <div className="search-preview" id="catalog-search-preview">
         <div className="search-preview-head"><strong>검색 미리보기</strong><span>최대 6개</span></div>
         {matches.length > 0 ? <div className="search-preview-grid">
-          {matches.map((product) => <a href={`/products/${product.id}`} className="search-preview-item" key={product.id}>
+          {matches.map((product) => <button type="button" className="search-preview-item" key={product.id} onPointerDown={(event) => { event.preventDefault(); openProduct(product.id); }}>
             <img src={product.image} alt="" />
             <span><small>{product.category} · {product.color}</small><strong>{product.name}</strong><b>{formatPrice(product.consumerPrice)}</b></span>
-          </a>)}
+          </button>)}
         </div> : <p className="search-preview-empty">일치하는 상품이 없습니다.</p>}
       </div>}
     </div>

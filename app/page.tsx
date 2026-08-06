@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProductGrid } from "./components/ProductGrid";
+import { CatalogSearch } from "./components/CatalogSearch";
 
 export const metadata = {
   title: "진흥몰 | 진흥조화 직영 조화 주문몰",
@@ -23,11 +24,7 @@ export default function Home() {
         <div>
           <h1>오늘 필요한 조화</h1>
         </div>
-        <form action="/products" className="catalog-main-search">
-          <label className="sr-only" htmlFor="catalog-search">상품 검색</label>
-          <input id="catalog-search" name="q" placeholder="상품명, 품번, 색상 검색" />
-          <button type="submit" aria-label="검색">검색</button>
-        </form>
+        <CatalogSearch />
       </section>
 
       <ProductGrid />

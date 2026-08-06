@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ProductGrid } from "./components/ProductGrid";
 
 export const metadata = {
@@ -8,27 +7,17 @@ export const metadata = {
 
 export default function Home() {
   return (
-    <main className="store-main home-redesign">
-      <section className="catalog-hero-v2">
-        <img src="/home-hero.png" alt="피오니, 수국, 튤립과 그린 소재로 구성한 진흥몰 조화 상품" />
-        <div className="hero-copy-v2">
-          <p className="eyebrow">진흥조화 직영</p>
-          <h1>찾던 조화,<br />바로 주문.</h1>
-          <p>현장에서 자주 쓰는 상품부터 신상품까지 한곳에서 빠르게 찾아보세요.</p>
-          <div className="hero-actions-v2">
-            <Link href="/products" className="primary-button">전체 상품</Link>
-            <Link href="/login" className="hero-text-link">로그인</Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="price-access-strip">
-        <span aria-hidden="true">₩</span>
+    <main className="store-main catalog-home">
+      <section className="catalog-title-row">
         <div>
-          <strong>가격은 로그인 후 확인할 수 있습니다.</strong>
-          <p>기존 거래처 계정으로 로그인하면 등록된 가격과 최근 주문이 표시됩니다.</p>
+          <p className="eyebrow">진흥조화 직영</p>
+          <h1>오늘 필요한 조화</h1>
         </div>
-        <Link href="/login">가격 확인</Link>
+        <form action="/products" className="catalog-main-search">
+          <label className="sr-only" htmlFor="catalog-search">상품 검색</label>
+          <input id="catalog-search" name="q" placeholder="상품명, 품번, 색상 검색" />
+          <button type="submit" aria-label="검색">검색</button>
+        </form>
       </section>
 
       <ProductGrid />

@@ -1,15 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { formatPrice, type Product } from "@/app/lib/products";
 import { useStore } from "./StoreProvider";
 
 export function ProductCard({ product }: { product: Product }) {
-  const { role, favorites, toggleFavorite, addToCart } = useStore();
-  const isLoggedIn = role !== "guest";
-  const isBusiness = role === "business";
+  const { favorites, toggleFavorite, addToCart } = useStore();
+  const [quantity, setQuantity] = useState(product.minOrder);
   const isFavorite = favorites.includes(product.id);
-  const price = isBusiness ? product.businessPrice : product.consumerPrice;
 
   return (
     <article className="product-card">
@@ -24,16 +23,22 @@ export function ProductCard({ product }: { product: Product }) {
           aria-label={isFavorite ? "자주 주문에서 삭제" : "자주 주문에 등록"}
           aria-pressed={isFavorite}
         >
-          {isFavorite ? "저장됨" : "저장"}
+          {isFavorite ? "♥" : "♡"}
         </button>
       </div>
       <div className="product-content">
-        {(product.isBest || product.isNew) && <div className="product-status-row">{product.isBest && <span>BEST</span>}{product.isNew && <span>NEW</span>}</div>}
-        <p className="product-meta">{product.category} · {product.color}</p>
+        <p className="product-code">{product.id.slice(0, 8).toUpperCase()}</p>
         <Link href={`/products/${product.id}`} className="product-name">{product.name}</Link>
-        {isLoggedIn ? <div className="price-block"><strong>{formatPrice(price)}</strong><span>로그인 회원가</span></div> : <Link href="/login" className="locked-price">로그인 후 가격 확인</Link>}
-        <p className="unit-copy">{product.unit} · 최소 {product.minOrder}단</p>
-        {isLoggedIn ? <button type="button" className="quick-cart-button" onClick={() => addToCart(product.id, product.minOrder)}>{product.minOrder}단 담기</button> : <Link className="quick-cart-button login-cart-link" href="/login">로그인하고 주문</Link>}
+        <div className="price-block"><strong>{formatPrice(product.consumerPrice)}</strong><span>VAT 포함</span></div>
+        <p className="unit-copy">최소 {product.minOrder}단 · {product.unit}</p>
+        <div className="product-order-row">
+          <div className="quantity-stepper" aria-label={`${product.name} 수량`}>
+            <button type="button" aria-label="수량 줄이기" onClick={() => setQuantity((value) => Math.max(product.minOrder, value - 1))}>−</button>
+            <strong>{quantity}</strong>
+            <button type="button" aria-label="수량 늘리기" onClick={() => setQuantity((value) => value + 1)}>＋</button>
+          </div>
+          <button type="button" className="quick-cart-button" onClick={() => addToCart(product.id, quantity)}>담기</button>
+        </div>
       </div>
     </article>
   );

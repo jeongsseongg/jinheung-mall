@@ -3,13 +3,11 @@
 import { useMemo, useState } from "react";
 import { categories, products } from "@/app/lib/products";
 import { ProductCard } from "./ProductCard";
-import { useStore } from "./StoreProvider";
 
 export function ProductGrid({ compact = false }: { compact?: boolean }) {
   const [category, setCategory] = useState("전체");
   const [sort, setSort] = useState("popular");
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const { role } = useStore();
+  const [categoryOpen, setCategoryOpen] = useState(true);
   const categoryCounts = useMemo(() => Object.fromEntries(categories.map((item) => [item, item === "전체" ? products.length : products.filter((product) => product.category === item).length])), []);
   const visibleProducts = useMemo(() => {
     const filtered = category === "전체" ? products : products.filter((product) => product.category === category);
@@ -47,13 +45,13 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
           <div className="catalog-heading-row">
             <div>
               <h2 id="catalog-heading">{category === "전체" ? "전체 상품" : category}</h2>
-              <span>로그인 후 가격을 확인할 수 있습니다.</span>
+              <span>표시 가격은 VAT가 포함된 예시 가격입니다.</span>
             </div>
             <label className="sort-select">정렬
               <select value={sort} onChange={(event) => setSort(event.target.value)}>
                 <option value="popular">주문 많은 순</option>
                 <option value="new">신상품 순</option>
-                {role !== "guest" && <option value="price-low">낮은 가격 순</option>}
+                <option value="price-low">낮은 가격 순</option>
               </select>
             </label>
           </div>

@@ -10,7 +10,6 @@ export default function Home() {
     <main className="store-main catalog-home">
       <section className="catalog-title-row">
         <div>
-          <p className="eyebrow">진흥조화 직영</p>
           <h1>오늘 필요한 조화</h1>
         </div>
         <form action="/products" className="catalog-main-search">

@@ -5,50 +5,31 @@ import { usePathname } from "next/navigation";
 import { StoreProvider, useStore } from "./StoreProvider";
 
 const navItems = [
-  { href: "/", label: "상품" },
+  { href: "/", label: "전체상품" },
   { href: "/favorites", label: "자주 주문" },
   { href: "/orders", label: "주문내역" },
-  { href: "/login", label: "로그인" },
 ];
 
 function Header() {
   const pathname = usePathname();
   const { cartCount, role } = useStore();
   const isLoggedIn = role !== "guest";
-  const roleLabel = isLoggedIn ? "로그인 완료" : "가격 확인";
 
   return (
     <>
-      <div className="top-notice">
-        <span>가격 안내</span>
-        <p>로그인하면 등록된 상품 가격을 확인할 수 있습니다.</p>
-        <Link href="/login">로그인</Link>
-      </div>
       <header className="site-header">
-        <div className="header-inner">
+        <div className="header-inner catalog-header-inner">
           <Link href="/" className="brand" aria-label="진흥몰 홈">
-            <span className="brand-mark">JH</span>
-            <span className="brand-copy"><strong>진흥몰</strong><small>JINHEUNG FLOWER</small></span>
+            <span className="reference-brand">진흥몰</span>
           </Link>
-          <form action="/products" className="header-search">
-            <label className="sr-only" htmlFor="global-search">상품 검색</label>
-            <input id="global-search" name="q" placeholder="상품명, 색상, 품번으로 검색" />
-            <button type="submit">검색</button>
-          </form>
-          <div className="header-actions">
-            <Link href={isLoggedIn ? "/mypage" : "/login"} className="account-link"><span>{roleLabel}</span><strong>{isLoggedIn ? "내 주문정보" : "로그인"}</strong></Link>
-            <Link href="/cart" className="cart-link">장바구니 <b>{cartCount}</b></Link>
-          </div>
-        </div>
-        <nav className="desktop-nav" aria-label="주요 메뉴">
-          <div className="nav-inner">
+          <nav className="reference-nav" aria-label="주요 메뉴">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>{item.label}</Link>
             ))}
-            <span className="nav-divider" />
-            <Link href="/admin">관리자 미리보기</Link>
-          </div>
-        </nav>
+            <Link href={isLoggedIn ? "/mypage" : "/login"}>{isLoggedIn ? "마이페이지" : "로그인"}</Link>
+            <Link href="/cart" className="reference-cart">장바구니 <b>{cartCount}</b></Link>
+          </nav>
+        </div>
       </header>
       <nav className="mobile-bottom-nav" aria-label="모바일 메뉴">
         <Link href="/" className={pathname === "/" ? "active" : ""}><span>⌂</span>홈</Link>

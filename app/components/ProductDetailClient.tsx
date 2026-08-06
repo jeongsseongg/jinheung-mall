@@ -17,8 +17,8 @@ export function ProductDetailClient({ product }: { product: Product }) {
       <nav className="breadcrumbs" aria-label="현재 위치"><Link href="/">홈</Link><span>›</span><Link href="/products">{product.category}</Link><span>›</span><strong>{product.name}</strong></nav>
       <section className="product-detail">
         <div className="detail-gallery">
-          <img src={product.image} alt={`${product.name} 예시 이미지`} />
-          <span>예시 상품 이미지</span>
+          {product.image ? <img src={product.image} alt={`${product.name} 예시 이미지`} /> : <div className="detail-image-placeholder"><small>오래담 조화</small><strong>{product.name}</strong><span>{product.color}</span></div>}
+          <span>{product.image ? "예시 상품 이미지" : "상품 이미지 준비 중"}</span>
         </div>
         <div className="detail-info">
           <p className="product-meta">{product.category} · {product.color}</p>

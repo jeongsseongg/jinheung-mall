@@ -12,8 +12,8 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="product-card">
       <div className="product-image-wrap">
-        <a href={`/products/${product.id}`} aria-label={`${product.name} 상세보기`}>
-          <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" />
+        <a href={`/products/${product.id}`} aria-label={`${product.name} 상세보기`} className={product.image ? "product-image-link" : "product-image-placeholder"}>
+          {product.image ? <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" /> : <><small>오래담 조화</small><strong>{product.name}</strong><span>{product.color}</span></>}
         </a>
         <button
           type="button"

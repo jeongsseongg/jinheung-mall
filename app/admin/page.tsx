@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { useProducts } from "@/app/lib/use-products";
+import { refreshProductCache, useProducts } from "@/app/lib/use-products";
 import { useAuth } from "@/app/components/AuthProvider";
 import { formatPrice } from "@/app/lib/products";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase-browser";
@@ -23,6 +23,27 @@ type AdminOrder = {
 };
 
 type AdminTab = "products" | "orders" | "security";
+
+type AdminProduct = {
+  id: string; sku: string; name: string; description: string; price: number;
+  bush_count: number | null; sales_unit: "단" | "박스" | "카톤";
+  stock_quantity: number; image_url: string | null; is_active: boolean;
+  metadata: { specification?: string; note?: string; stock_unconfirmed?: boolean } | null;
+  colors: { name: string; stock_quantity: number; sort_order: number }[];
+};
+
+type ProductDraft = {
+  id: string; sku: string; name: string; description: string; price: string;
+  bushCount: string; salesUnit: "단" | "박스" | "카톤"; stockQuantity: string;
+  imageUrl: string; colors: string; specification: string; note: string;
+  stockUnconfirmed: boolean; isActive: boolean;
+};
+
+const emptyProductDraft: ProductDraft = {
+  id: "", sku: "", name: "", description: "", price: "", bushCount: "",
+  salesUnit: "단", stockQuantity: "0", imageUrl: "", colors: "",
+  specification: "", note: "", stockUnconfirmed: true, isActive: true,
+};
 
 const statuses = [
   ["pending_payment", "입금 대기"], ["paid", "입금 확인"], ["preparing", "배송 준비"],
@@ -46,6 +67,12 @@ export default function AdminPage() {
   const [passwordError, setPasswordError] = useState("");
   const [notificationMessage, setNotificationMessage] = useState("");
   const notifiedOrderIds = useRef(new Set<string>());
+  const [adminProducts, setAdminProducts] = useState<AdminProduct[]>([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productSaving, setProductSaving] = useState(false);
+  const [productMessage, setProductMessage] = useState("");
 
   const loadOrders = async () => {
     if (!user) { setOrdersLoading(false); return; }
@@ -66,7 +93,16 @@ export default function AdminPage() {
     setOrdersLoading(false);
   };
 
-  useEffect(() => { if (!loading) void loadOrders(); }, [loading, user?.id]);
+  const loadAdminProducts = async () => {
+    if (!user) { setProductsLoading(false); return; }
+    setProductsLoading(true);
+    const { data, error } = await getSupabaseBrowserClient().rpc("list_admin_products");
+    if (error) setAdminError("관리자 상품 정보를 불러오지 못했습니다.");
+    else { setAdminProducts((data || []) as AdminProduct[]); setAdminError(""); }
+    setProductsLoading(false);
+  };
+
+  useEffect(() => { if (!loading) { void loadOrders(); void loadAdminProducts(); } }, [loading, user?.id]);
 
   const metrics = useMemo(() => ({
     today: orders.filter((order) => new Date(order.created_at).toDateString() === new Date().toDateString()).length,
@@ -112,6 +148,57 @@ export default function AdminPage() {
     setPasswordMessage("비밀번호가 안전하게 변경되었습니다.");
   };
 
+  const editProduct = (product: AdminProduct) => setProductDraft({
+    id: product.id,
+    sku: product.sku,
+    name: product.name,
+    description: product.description,
+    price: String(product.price),
+    bushCount: product.bush_count ? String(product.bush_count) : "",
+    salesUnit: product.sales_unit,
+    stockQuantity: String(product.stock_quantity),
+    imageUrl: product.image_url || "",
+    colors: product.colors.map((color) => color.name).join(", "),
+    specification: product.metadata?.specification || "",
+    note: product.metadata?.note || "",
+    stockUnconfirmed: Boolean(product.metadata?.stock_unconfirmed),
+    isActive: product.is_active,
+  });
+
+  const updateProductDraft = <K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) => {
+    setProductDraft((current) => current ? { ...current, [key]: value } : current);
+  };
+
+  const saveProduct = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!productDraft) return;
+    setProductSaving(true); setProductMessage("");
+    const payload = {
+      id: productDraft.id || null,
+      sku: productDraft.sku,
+      name: productDraft.name,
+      description: productDraft.description,
+      price: Number(productDraft.price),
+      bush_count: productDraft.bushCount ? Number(productDraft.bushCount) : null,
+      sales_unit: productDraft.salesUnit,
+      stock_quantity: Number(productDraft.stockQuantity),
+      image_url: productDraft.imageUrl || null,
+      colors: productDraft.colors.split(",").map((color) => color.trim()).filter(Boolean),
+      specification: productDraft.specification || null,
+      note: productDraft.note || null,
+      stock_unconfirmed: productDraft.stockUnconfirmed,
+      is_active: productDraft.isActive,
+    };
+    const { error } = await getSupabaseBrowserClient().rpc("save_admin_product", { p_product: payload });
+    setProductSaving(false);
+    if (error) { setAdminError(error.message.includes("duplicate") ? "이미 사용 중인 상품 코드입니다." : "상품을 저장하지 못했습니다. 입력값을 확인해 주세요."); return; }
+    await Promise.all([loadAdminProducts(), refreshProductCache()]);
+    setProductDraft(null);
+    setProductMessage("상품 정보가 저장되어 쇼핑몰에 반영되었습니다.");
+  };
+
+  const visibleAdminProducts = adminProducts.filter((product) => `${product.sku} ${product.name} ${product.colors.map((color) => color.name).join(" ")}`.toLowerCase().includes(productSearch.toLowerCase()));
+
   if (loading) return <main className="store-main page-main"><div className="empty-state"><strong>관리자 계정을 확인하고 있습니다.</strong></div></main>;
   if (!user) return <main className="store-main page-main"><div className="empty-state"><strong>관리자 로그인이 필요합니다.</strong><a href="/login" className="primary-button">로그인하기</a></div></main>;
 
@@ -133,7 +220,30 @@ export default function AdminPage() {
         <section className="admin-metrics"><article><span>오늘 주문</span><strong>{metrics.today}건</strong><small>오늘 접수된 주문</small></article><article><span>입금 대기</span><strong>{metrics.pending}건</strong><small>무통장입금 확인 전</small></article><article><span>배송 준비</span><strong>{metrics.preparing}건</strong><small>운송장 발급 대기</small></article><article><span>재고 확인</span><strong>{products.filter((product) => product.stock === "확인 필요").length}개</strong><small>재고 확인 필요 상품</small></article></section>
         <div className="admin-tabs"><button className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}>상품 관리</button><button className={tab === "orders" ? "active" : ""} onClick={() => setTab("orders")}>주문 관리</button><button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>계정 보안</button></div>
 
-        {tab === "products" && <section className="admin-table-panel"><div className="panel-heading"><div><h2>상품 관리</h2><p>상품명, 가격, 색상 그룹, 부쉬·재고와 판매 단위를 관리합니다.</p></div><button type="button" className="primary-button">+ 상품 등록</button></div><div className="admin-table product-admin-table"><div className="table-row table-head"><span>상품</span><span>판매가</span><span>판매 단위</span><span>재고</span><span>관리</span></div>{products.slice(0, 8).map((product) => <div className="table-row" key={product.id}><span className="admin-product"><div className="admin-product-placeholder">{product.name}</div><strong>{product.name}</strong></span><span>{formatPrice(product.consumerPrice)}</span><span>{product.salesUnit} · {product.unit}</span><span>{product.stock}</span><span><button type="button" className="line-button">수정</button></span></div>)}</div></section>}
+        {tab === "products" && <section className="admin-table-panel">
+          <div className="panel-heading"><div><h2>상품 관리</h2><p>70개 상품의 가격, 색상, 부쉬·재고와 판매 상태를 관리합니다.</p></div><button type="button" className="primary-button" onClick={() => { setProductDraft({ ...emptyProductDraft }); setProductMessage(""); }}>+ 상품 등록</button></div>
+          {productMessage && <p className="admin-product-message">{productMessage}</p>}
+          {productDraft && <form className="admin-product-form" onSubmit={saveProduct}>
+            <div className="admin-product-form-head"><div><strong>{productDraft.id ? "상품 수정" : "새 상품 등록"}</strong><span>필수 정보와 판매 상태를 입력해 주세요.</span></div><button type="button" className="line-button" onClick={() => setProductDraft(null)}>닫기</button></div>
+            <div className="admin-product-fields">
+              <label><span>상품 코드</span><input value={productDraft.sku} onChange={(event) => updateProductDraft("sku", event.target.value)} placeholder="비워두면 자동 생성" /></label>
+              <label><span>상품명 *</span><input value={productDraft.name} onChange={(event) => updateProductDraft("name", event.target.value)} required /></label>
+              <label><span>판매가 *</span><input type="number" min="0" value={productDraft.price} onChange={(event) => updateProductDraft("price", event.target.value)} required /></label>
+              <label><span>부쉬</span><input type="number" min="1" value={productDraft.bushCount} onChange={(event) => updateProductDraft("bushCount", event.target.value)} /></label>
+              <label><span>판매 단위</span><select value={productDraft.salesUnit} onChange={(event) => updateProductDraft("salesUnit", event.target.value as ProductDraft["salesUnit"])}><option>단</option><option>박스</option><option>카톤</option></select></label>
+              <label><span>재고 수량</span><input type="number" min="0" value={productDraft.stockQuantity} onChange={(event) => updateProductDraft("stockQuantity", event.target.value)} required /></label>
+              <label className="wide"><span>색상 그룹</span><input value={productDraft.colors} onChange={(event) => updateProductDraft("colors", event.target.value)} placeholder="보라, 빨강, 오렌지, 크림" /></label>
+              <label className="wide"><span>규격 표시</span><input value={productDraft.specification} onChange={(event) => updateProductDraft("specification", event.target.value)} placeholder="예: 18부쉬 · 55cm · 10송이" /></label>
+              <label className="wide"><span>상품 이미지 URL</span><input type="url" value={productDraft.imageUrl} onChange={(event) => updateProductDraft("imageUrl", event.target.value)} placeholder="Supabase Storage 공개 이미지 주소" /></label>
+              <label className="wide"><span>상품 설명</span><textarea value={productDraft.description} onChange={(event) => updateProductDraft("description", event.target.value)} rows={3} /></label>
+              <label className="wide"><span>관리자 메모</span><input value={productDraft.note} onChange={(event) => updateProductDraft("note", event.target.value)} /></label>
+            </div>
+            <div className="admin-product-switches"><label><input type="checkbox" checked={productDraft.stockUnconfirmed} onChange={(event) => updateProductDraft("stockUnconfirmed", event.target.checked)} /><span>재고 확인 필요 표시</span></label><label><input type="checkbox" checked={productDraft.isActive} onChange={(event) => updateProductDraft("isActive", event.target.checked)} /><span>쇼핑몰에 판매 표시</span></label></div>
+            <button type="submit" className="approve-button" disabled={productSaving}>{productSaving ? "저장 중" : "상품 저장"}</button>
+          </form>}
+          <div className="admin-product-toolbar"><label><span className="sr-only">상품 검색</span><input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="상품명·상품 코드·색상 검색" /></label><span>총 {visibleAdminProducts.length}개</span></div>
+          {productsLoading ? <div className="empty-state"><strong>상품 정보를 불러오고 있습니다.</strong></div> : <div className="admin-table product-admin-table"><div className="table-row table-head"><span>상품</span><span>판매가</span><span>단위·부쉬</span><span>재고·상태</span><span>관리</span></div>{visibleAdminProducts.map((product) => <div className={`table-row ${product.is_active ? "" : "inactive"}`} key={product.id}><span className="admin-product">{product.image_url ? <img src={product.image_url} alt="" /> : <div className="admin-product-placeholder">{product.name}</div>}<span><strong>{product.name}</strong><small>{product.sku} · {product.colors.map((color) => color.name).join(", ") || "색상 미등록"}</small></span></span><span>{formatPrice(product.price)}</span><span>{product.sales_unit} · {product.bush_count ? `${product.bush_count}부쉬` : "부쉬 미설정"}</span><span>{product.stock_quantity}개 · {product.is_active ? "판매중" : "숨김"}</span><span><button type="button" className="line-button" onClick={() => editProduct(product)}>수정</button></span></div>)}</div>}
+        </section>}
 
         {tab === "orders" && <section className="admin-table-panel"><div className="panel-heading"><div><h2>주문 관리</h2><p>입금 확인 후 상태를 변경하고 택배사와 운송장을 입력합니다.</p></div><div className="admin-order-actions"><button className="line-button" type="button" onClick={() => void enableBrowserNotifications()}>브라우저 알림 켜기</button><button className="secondary-button" type="button" onClick={() => void loadOrders()}>새로고침</button></div></div>{notificationMessage && <p className="admin-notification-note">{notificationMessage}</p>}{ordersLoading ? <div className="empty-state"><strong>주문을 불러오고 있습니다.</strong></div> : adminError ? <div className="empty-state"><strong>관리자 권한을 확인해 주세요.</strong></div> : orders.length === 0 ? <div className="empty-state"><strong>아직 주문이 없습니다.</strong></div> : <div className="admin-order-list">{orders.map((order) => { const draft = drafts[order.id] || { status: order.status, courier: "", tracking: "" }; return <article className={order.is_new ? "new-order" : ""} key={order.id}><div className="admin-order-primary"><span>{order.is_new && <b>NEW</b>} {new Date(order.created_at).toLocaleString("ko-KR")}</span><strong>{order.order_number}</strong><p>{order.customer_name} · {order.customer_phone}</p><small>입금자 {order.depositor_name} · {order.item_count}종 · {formatPrice(order.total_amount)}</small></div><label><span>상태</span><select value={draft.status} onChange={(event) => updateDraft(order.id, "status", event.target.value)}>{statuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><span>택배사</span><input value={draft.courier} onChange={(event) => updateDraft(order.id, "courier", event.target.value)} placeholder="예: CJ대한통운" /></label><label><span>운송장</span><input value={draft.tracking} onChange={(event) => updateDraft(order.id, "tracking", event.target.value)} inputMode="numeric" /></label><button type="button" className="approve-button" disabled={savingId === order.id} onClick={() => void saveOrder(order.id)}>{savingId === order.id ? "저장 중" : "변경 저장"}</button></article>; })}</div>}</section>}
 

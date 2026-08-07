@@ -522,6 +522,24 @@ img { display: block; max-width: 100%; }
 .admin-order-list label { display: grid; gap: 5px; color: var(--muted); font-size: 9px; }
 .admin-order-list input, .admin-order-list select { width: 100%; height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 10px; }
 .admin-order-list .approve-button { margin: 0; }
+.admin-new-order-alert { margin-bottom: 18px; padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #b8dacb; border-radius: 11px; background: #eef8f3; }
+.admin-new-order-alert strong { color: var(--green); font-size: 13px; }
+.admin-new-order-alert p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
+.admin-new-order-alert button { height: 36px; padding: 0 13px; border: 0; border-radius: 7px; background: var(--green); color: #fff; font-size: 10px; font-weight: 700; cursor: pointer; }
+.admin-order-actions { display: flex; align-items: center; gap: 8px; }
+.admin-notification-note { margin: 0; padding: 10px 20px; border-top: 1px solid var(--line); background: var(--green-soft); color: var(--green); font-size: 10px; }
+.admin-order-list article.new-order { box-shadow: inset 4px 0 var(--green); background: #fbfefc; }
+.admin-order-primary b { margin-right: 4px; padding: 2px 5px; border-radius: 4px; background: var(--green); color: #fff; font-size: 8px; }
+.admin-security-panel { padding: 28px; display: grid; grid-template-columns: minmax(220px, .8fr) minmax(320px, 1fr); gap: 40px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.admin-security-panel > div > p { margin: 0 0 8px; color: var(--green); font-size: 9px; font-weight: 700; letter-spacing: .12em; }
+.admin-security-panel h2 { margin: 0 0 10px; font-size: 20px; }
+.admin-security-panel > div > span { color: var(--muted); font-size: 11px; line-height: 1.7; }
+.admin-security-form { display: grid; gap: 14px; }
+.admin-security-form label { display: grid; gap: 6px; }
+.admin-security-form label span { color: var(--muted); font-size: 10px; }
+.admin-security-form input { height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 7px; font: inherit; }
+.admin-security-form .primary-button { width: fit-content; min-width: 130px; }
+.form-success { margin: 0; color: var(--green); font-size: 10px; }
 
 @media (hover: hover) and (pointer: fine) {
   .product-image-wrap:hover .product-image { transform: scale(1.025); }
@@ -738,6 +756,8 @@ img { display: block; max-width: 100%; }
   .table-row { min-width: 720px; }
   .admin-order-list { overflow-x: auto; }
   .admin-order-list article { min-width: 850px; }
+  .admin-security-panel { grid-template-columns: 1fr; gap: 24px; padding: 22px; }
+  .admin-new-order-alert { align-items: flex-start; flex-direction: column; }
   .site-footer { margin-top: 60px; padding: 35px 20px 100px; grid-template-columns: 1fr; }
   .site-footer small { grid-column: 1; }
   .toast { bottom: 78px; }

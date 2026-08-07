@@ -10,6 +10,7 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<AuthResponse>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<AuthResponse>;
   signUp: (input: { email: string; password: string; name: string; phone: string }) => Promise<AuthResponse>;
   signOut: () => Promise<void>;
 };
@@ -58,6 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
       return { error: error?.message ?? null, needsEmailConfirmation: !error && !data.session };
+    },
+    async changePassword(currentPassword, newPassword) {
+      if (!user?.email) return { error: "로그인 정보를 확인할 수 없습니다." };
+      const supabase = getSupabaseBrowserClient();
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (reauthError) return { error: "현재 비밀번호가 일치하지 않습니다." };
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      return { error: error?.message ?? null };
     },
     async signOut() {
       await getSupabaseBrowserClient().auth.signOut();

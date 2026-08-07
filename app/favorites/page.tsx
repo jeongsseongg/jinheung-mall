@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/components/SafeLink";
 import { ProductCard } from "@/app/components/ProductCard";
 import { useStore } from "@/app/components/StoreProvider";
 import { useProducts } from "@/app/lib/use-products";

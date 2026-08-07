@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/app/components/SafeLink";
 import { useAuth } from "@/app/components/AuthProvider";
 import { formatPrice } from "@/app/lib/products";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase-browser";

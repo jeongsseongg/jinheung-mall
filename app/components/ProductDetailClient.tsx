@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "./SafeLink";
 import { formatPrice, type Product } from "@/app/lib/products";
 import { useProducts } from "@/app/lib/use-products";
 import { useStore } from "./StoreProvider";

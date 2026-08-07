@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "./SafeLink";
 import { usePathname } from "next/navigation";
 import { StoreProvider, useStore } from "./StoreProvider";
 import { AuthProvider, useAuth } from "./AuthProvider";

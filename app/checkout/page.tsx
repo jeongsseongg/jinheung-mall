@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/app/components/SafeLink";
 import { useAuth } from "@/app/components/AuthProvider";
 import { useStore } from "@/app/components/StoreProvider";
 import { useProducts } from "@/app/lib/use-products";

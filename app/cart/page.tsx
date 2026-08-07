@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/components/SafeLink";
 import { formatPrice } from "@/app/lib/products";
 import { useProducts } from "@/app/lib/use-products";
 import { useStore } from "@/app/components/StoreProvider";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "./components/SafeLink";
 import { ProductGrid } from "./components/ProductGrid";
 import { CatalogSearch } from "./components/CatalogSearch";
 

@@ -1,5 +1,5 @@
 {
-  "name": "site-creator-vinext-starter",
+  "name": "jinheung-mall",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@11.16.0",
@@ -12,10 +12,13 @@
     "start": "vinext start",
     "test": "vinext build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "products:images:dry-run": "node scripts/upload-products-to-supabase.mjs --dry-run",
+    "products:upload": "node scripts/upload-products-to-supabase.mjs",
+    "products:verify": "node scripts/verify-supabase-products.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.1",
+    "@supabase/supabase-js": "2.112.1",
     "drizzle-orm": "0.45.2",
     "react": "19.2.6",
     "react-dom": "19.2.6"
@@ -37,6 +40,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "16.4.0",
     "react-server-dom-webpack": "19.2.6",
+    "sharp": "0.34.5",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.3",

@@ -1,5 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { categoryFor, type Product } from "./products";
+import { getSupabaseBrowserClient } from "./supabase-browser";
+import { createClient } from "@supabase/supabase-js";
 
 type ProductColorRow = {
   name: string;
@@ -21,12 +22,11 @@ type ProductRow = {
   product_colors: ProductColorRow[] | null;
 };
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-const stableIdFromSku = (sku: string) => {
-  const number = Number(sku.match(/(\d+)$/)?.[1] ?? 0);
-  return number > 0 ? `oraedam-${String(number).padStart(2, "0")}` : sku.toLowerCase();
+const stableIdFromSku = (sku: string, databaseId: string) => {
+  const canonicalNumber = sku.match(/^JH-FL-(\d{3})$/i)?.[1];
+  return canonicalNumber
+    ? `oraedam-${String(Number(canonicalNumber)).padStart(2, "0")}`
+    : `product-${databaseId}`;
 };
 
 const stockLabel = (row: ProductRow): Product["stock"] => {
@@ -41,7 +41,7 @@ const mapProduct = (row: ProductRow, index: number): Product => {
   const unit = row.metadata?.specification || (row.bush_count ? `${row.bush_count}부쉬` : row.sales_unit);
 
   return {
-    id: stableIdFromSku(row.sku),
+    id: stableIdFromSku(row.sku, row.id),
     databaseId: row.id,
     sku: row.sku,
     name: row.name,
@@ -63,11 +63,12 @@ const mapProduct = (row: ProductRow, index: number): Product => {
 };
 
 export async function fetchSupabaseProducts(): Promise<Product[]> {
-  if (!supabaseUrl || !publishableKey) throw new Error("Supabase public environment variables are missing.");
-
-  const supabase = createClient(supabaseUrl, publishableKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !publishableKey) throw new Error("Supabase public environment variables are missing.");
+  const supabase = typeof window === "undefined"
+    ? createClient(url, publishableKey, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
+    : getSupabaseBrowserClient();
   const { data, error } = await supabase
     .from("products")
     .select("id,sku,name,description,price,bush_count,sales_unit,stock_quantity,image_url,metadata,product_colors(name,sort_order,stock_quantity)")

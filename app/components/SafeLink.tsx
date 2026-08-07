@@ -6,7 +6,7 @@ type SafeLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
   href: string;
 };
 
-export default function SafeLink({ href, onClick, ...props }: SafeLinkProps) {
+export default function SafeLink({ href, onClick, children, ...props }: SafeLinkProps) {
   const navigate = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -15,5 +15,5 @@ export default function SafeLink({ href, onClick, ...props }: SafeLinkProps) {
     window.location.assign(href);
   };
 
-  return <a href={href} onClick={navigate} {...props} />;
+  return <a href={href} onClick={navigate} {...props}>{children}</a>;
 }

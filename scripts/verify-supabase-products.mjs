@@ -1,15 +1,21 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
 const projectRoot = resolve(import.meta.dirname, "..");
-const envText = readFileSync(resolve(projectRoot, ".env.local"), "utf8");
-const env = Object.fromEntries(envText.split(/\r?\n/)
+const envPath = resolve(projectRoot, ".env.local");
+const envText = existsSync(envPath) ? readFileSync(envPath, "utf8") : "";
+const envFile = Object.fromEntries(envText.split(/\r?\n/)
   .filter((line) => line && !line.startsWith("#") && line.includes("="))
   .map((line) => {
     const separator = line.indexOf("=");
     return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
   }));
+
+const env = { ...envFile, ...process.env };
+if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || !env.SUPABASE_SECRET_KEY) {
+  throw new Error("Supabase 검증 환경변수가 없습니다.");
+}
 
 const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -31,10 +37,13 @@ if (colorError) throw colorError;
 
 const { data: files, error: storageError } = await supabase.storage
   .from("product-images")
-  .list("", { limit: 100, sortBy: { column: "name", order: "asc" } });
+  .list("optimized", { limit: 1000, sortBy: { column: "name", order: "asc" } });
 if (storageError) throw storageError;
 
 const missingImageSkus = products.filter((product) => !product.image_url).map((product) => product.sku);
+const nonOptimizedImageSkus = products
+  .filter((product) => !product.image_url?.includes("/product-images/optimized/"))
+  .map((product) => product.sku);
 const { data: publicProducts, error: publicProductError } = await publicClient
   .from("products")
   .select("sku,image_url,product_colors(name)")
@@ -46,6 +55,8 @@ console.log(JSON.stringify({
   productsWithImage: products.length - missingImageSkus.length,
   colorOptions: colorCount,
   storageFiles: files.length,
+  optimizedStorageFiles: files.length,
   publiclyReadableProducts: publicProducts.length,
   missingImageSkus,
+  nonOptimizedImageSkus,
 }));

@@ -1,29 +1,41 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { refreshProductCache, useProducts } from "@/app/lib/use-products";
 import { useAuth } from "@/app/components/AuthProvider";
 import { formatPrice } from "@/app/lib/products";
 import { getSupabaseBrowserClient } from "@/app/lib/supabase-browser";
 import { uploadProductImage } from "@/app/lib/product-image-upload";
+import Link from "@/app/components/SafeLink";
 
 type AdminOrder = {
   id: string;
   order_number: string;
   customer_name: string;
   customer_phone: string;
+  customer_email: string | null;
   depositor_name: string;
   status: string;
   payment_status: string;
+  subtotal: number;
+  shipping_fee: number;
   total_amount: number;
+  shipping_address: {
+    receiver?: string; phone?: string; postalCode?: string;
+    address1?: string; address2?: string; memo?: string;
+  } | null;
   tracking_number: string | null;
   courier_code: string | null;
   created_at: string;
   item_count: number;
+  items: {
+    sku: string; product_name: string; color_name: string | null;
+    quantity: number; sales_unit: string; unit_price: number; line_total: number;
+  }[];
   is_new: boolean;
 };
 
-type AdminTab = "products" | "orders" | "customers" | "security";
+type AdminTab = "products" | "orders" | "customers" | "settings" | "security";
 
 type AdminCustomer = {
   id: string;
@@ -57,10 +69,29 @@ type ProductDraft = {
   stockUnconfirmed: boolean; isActive: boolean;
 };
 
+type StoreSettingsDraft = {
+  storeName: string;
+  bankName: string;
+  bankAccount: string;
+  accountHolder: string;
+  shippingFee: string;
+  freeShippingThreshold: string;
+  minimumOrderAmount: string;
+  orderingEnabled: boolean;
+  orderNotice: string;
+  supportPhone: string;
+};
+
 const emptyProductDraft: ProductDraft = {
   id: "", sku: "", name: "", description: "", price: "", bushCount: "",
   salesUnit: "단", stockQuantity: "0", imageUrl: "", colors: "",
   specification: "", note: "", stockUnconfirmed: true, isActive: true,
+};
+
+const emptyStoreSettings: StoreSettingsDraft = {
+  storeName: "진흥몰", bankName: "", bankAccount: "", accountHolder: "", shippingFee: "0",
+  freeShippingThreshold: "0", minimumOrderAmount: "0", orderingEnabled: true,
+  orderNotice: "", supportPhone: "",
 };
 
 const statuses = [
@@ -68,9 +99,18 @@ const statuses = [
   ["shipped", "배송중"], ["delivered", "배송완료"], ["cancelled", "주문 취소"],
 ] as const;
 
+const statusTransitions: Record<string, readonly string[]> = {
+  pending_payment: ["pending_payment", "paid", "cancelled"],
+  paid: ["paid", "preparing", "cancelled"],
+  preparing: ["preparing", "shipped", "cancelled"],
+  shipped: ["shipped", "delivered"],
+  delivered: ["delivered"],
+  cancelled: ["cancelled"],
+};
+
 export default function AdminPage() {
   const { products } = useProducts();
-  const { user, loading, changePassword } = useAuth();
+  const { user, loading, isAdmin, adminLoading, changePassword } = useAuth();
   const [tab, setTab] = useState<AdminTab>("products");
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -99,17 +139,23 @@ export default function AdminPage() {
   const [customerNotes, setCustomerNotes] = useState<Record<string, string>>({});
   const [customerSavingId, setCustomerSavingId] = useState("");
   const [customerMessage, setCustomerMessage] = useState("");
+  const [storeSettings, setStoreSettings] = useState<StoreSettingsDraft>(emptyStoreSettings);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState("");
+  const [loadedAdminUserId, setLoadedAdminUserId] = useState<string | null>(null);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     if (!user) { setOrdersLoading(false); return; }
     setOrdersLoading(true);
     const { data, error } = await getSupabaseBrowserClient().rpc("list_admin_orders");
-    if (error) setAdminError("현재 계정에는 관리자 권한이 없거나 주문 정보를 불러오지 못했습니다.");
+    const loadError = "현재 계정에는 관리자 권한이 없거나 주문 정보를 불러오지 못했습니다.";
+    if (error) setAdminError(loadError);
     else {
       const next = (data || []) as AdminOrder[];
       setOrders(next);
       setDrafts(Object.fromEntries(next.map((order) => [order.id, { status: order.status, courier: order.courier_code || "", tracking: order.tracking_number || "" }])));
-      setAdminError("");
+      setAdminError((current) => current === loadError ? "" : current);
       const unnotified = next.filter((order) => order.is_new && !notifiedOrderIds.current.has(order.id));
       if (unnotified.length > 0 && "Notification" in window && Notification.permission === "granted") {
         new Notification("진흥몰 새 주문", { body: `새 주문 ${unnotified.length}건이 접수되었습니다.` });
@@ -117,32 +163,68 @@ export default function AdminPage() {
       unnotified.forEach((order) => notifiedOrderIds.current.add(order.id));
     }
     setOrdersLoading(false);
-  };
+  }, [user]);
 
-  const loadAdminProducts = async () => {
+  const loadAdminProducts = useCallback(async () => {
     if (!user) { setProductsLoading(false); return; }
     setProductsLoading(true);
     const { data, error } = await getSupabaseBrowserClient().rpc("list_admin_products");
-    if (error) setAdminError("관리자 상품 정보를 불러오지 못했습니다.");
-    else { setAdminProducts((data || []) as AdminProduct[]); setAdminError(""); }
+    const loadError = "관리자 상품 정보를 불러오지 못했습니다.";
+    if (error) setAdminError(loadError);
+    else { setAdminProducts((data || []) as AdminProduct[]); setAdminError((current) => current === loadError ? "" : current); }
     setProductsLoading(false);
-  };
+  }, [user]);
 
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     if (!user) { setCustomersLoading(false); return; }
     setCustomersLoading(true);
     const { data, error } = await getSupabaseBrowserClient().rpc("list_admin_customers");
-    if (error) setAdminError("고객 정보를 불러오지 못했습니다.");
+    const loadError = "고객 정보를 불러오지 못했습니다.";
+    if (error) setAdminError(loadError);
     else {
       const next = (data || []) as AdminCustomer[];
       setCustomers(next);
       setCustomerNotes(Object.fromEntries(next.map((customer) => [customer.id, customer.admin_note || ""])));
-      setAdminError("");
+      setAdminError((current) => current === loadError ? "" : current);
     }
     setCustomersLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { if (!loading) { void loadOrders(); void loadAdminProducts(); void loadCustomers(); } }, [loading, user?.id]);
+  const loadStoreSettings = useCallback(async () => {
+    if (!user) { setSettingsLoading(false); return; }
+    setSettingsLoading(true);
+    const { data, error } = await getSupabaseBrowserClient().rpc("get_admin_store_settings");
+    const loadError = "주문·입금 설정을 불러오지 못했습니다.";
+    if (error || !data) setAdminError(loadError);
+    else {
+      const settings = data as Record<string, string | number | boolean | null>;
+      setStoreSettings({
+        storeName: String(settings.store_name || "진흥몰"),
+        bankName: String(settings.bank_name || ""),
+        bankAccount: String(settings.bank_account || ""),
+        accountHolder: String(settings.account_holder || ""),
+        shippingFee: String(settings.shipping_fee || 0),
+        freeShippingThreshold: String(settings.free_shipping_threshold || 0),
+        minimumOrderAmount: String(settings.minimum_order_amount || 0),
+        orderingEnabled: settings.is_ordering_enabled === true,
+        orderNotice: String(settings.order_notice || ""),
+        supportPhone: String(settings.support_phone || ""),
+      });
+      setAdminError((current) => current === loadError ? "" : current);
+    }
+    setSettingsLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (loading || adminLoading || !user || !isAdmin) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void Promise.all([loadOrders(), loadAdminProducts(), loadCustomers(), loadStoreSettings()]).then(() => {
+        if (active) setLoadedAdminUserId(user.id);
+      });
+    }, 0);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [adminLoading, isAdmin, loadAdminProducts, loadCustomers, loadOrders, loadStoreSettings, loading, user]);
 
   const metrics = useMemo(() => ({
     today: orders.filter((order) => new Date(order.created_at).toDateString() === new Date().toDateString()).length,
@@ -156,10 +238,20 @@ export default function AdminPage() {
   const saveOrder = async (id: string) => {
     const draft = drafts[id];
     if (!draft) return;
+    if (["shipped", "delivered"].includes(draft.status) && (!draft.courier.trim() || !draft.tracking.trim())) {
+      setAdminError("배송중·배송완료 상태에는 택배사와 운송장을 모두 입력해 주세요.");
+      return;
+    }
+    if (draft.status === "cancelled" && !window.confirm("이 주문을 취소할까요? 확정 재고는 자동으로 복구됩니다.")) return;
     setSavingId(id);
-    const { error } = await getSupabaseBrowserClient().rpc("update_admin_order", { p_order_id: id, p_status: draft.status, p_courier_code: draft.courier || null, p_tracking_number: draft.tracking || null });
-    if (error) setAdminError("주문 상태를 변경하지 못했습니다.");
-    else await loadOrders();
+    setNotificationMessage("");
+    const { error } = await getSupabaseBrowserClient().rpc("update_admin_order", { p_order_id: id, p_status: draft.status, p_courier_code: draft.courier.trim() || null, p_tracking_number: draft.tracking.trim() || null });
+    if (error) setAdminError(error.message.includes("invalid order status transition") ? "현재 주문 단계에서 선택한 상태로 변경할 수 없습니다." : "주문 상태를 변경하지 못했습니다.");
+    else {
+      setAdminError("");
+      setNotificationMessage("주문 상태와 배송 정보를 저장했습니다.");
+      await loadOrders();
+    }
     setSavingId("");
   };
 
@@ -279,30 +371,66 @@ export default function AdminPage() {
     return `${customer.name || ""} ${customer.email || ""} ${customer.phone || ""} ${address.address1 || ""} ${customer.admin_note || ""}`.toLowerCase().includes(customerSearch.toLowerCase());
   });
 
-  if (loading) return <main className="store-main page-main"><div className="empty-state"><strong>관리자 계정을 확인하고 있습니다.</strong></div></main>;
-  if (!user) return <main className="store-main page-main"><div className="empty-state"><strong>관리자 로그인이 필요합니다.</strong><a href="/login" className="primary-button">로그인하기</a></div></main>;
+  const updateStoreSettings = <K extends keyof StoreSettingsDraft>(key: K, value: StoreSettingsDraft[K]) => {
+    setStoreSettings((current) => ({ ...current, [key]: value }));
+  };
+
+  const saveStoreSettings = async (event: FormEvent) => {
+    event.preventDefault();
+    const amounts = [storeSettings.shippingFee, storeSettings.freeShippingThreshold, storeSettings.minimumOrderAmount].map(Number);
+    if (!storeSettings.storeName.trim() || amounts.some((value) => !Number.isInteger(value) || value < 0)) {
+      setAdminError("상점명과 주문 금액 설정을 확인해 주세요.");
+      return;
+    }
+    setSettingsSaving(true);
+    setSettingsMessage("");
+    const { error } = await getSupabaseBrowserClient().rpc("save_admin_store_settings", {
+      p_settings: {
+        store_name: storeSettings.storeName.trim(),
+        bank_name: storeSettings.bankName.trim(),
+        bank_account: storeSettings.bankAccount.trim(),
+        account_holder: storeSettings.accountHolder.trim(),
+        shipping_fee: Number(storeSettings.shippingFee),
+        free_shipping_threshold: Number(storeSettings.freeShippingThreshold),
+        minimum_order_amount: Number(storeSettings.minimumOrderAmount),
+        is_ordering_enabled: storeSettings.orderingEnabled,
+        order_notice: storeSettings.orderNotice.trim(),
+        support_phone: storeSettings.supportPhone.trim(),
+      },
+    });
+    setSettingsSaving(false);
+    if (error) { setAdminError("주문·입금 설정을 저장하지 못했습니다. 입력값을 확인해 주세요."); return; }
+    setAdminError("");
+    setSettingsMessage("주문서와 결제 안내 설정을 저장했습니다.");
+    await loadStoreSettings();
+  };
+
+  if (loading || adminLoading || (user && isAdmin && loadedAdminUserId !== user.id)) return <main id="main-content" className="store-main page-main"><div className="empty-state"><strong>관리자 계정을 확인하고 있습니다.</strong></div></main>;
+  if (!user) return <main id="main-content" className="store-main page-main"><div className="empty-state"><strong>관리자 로그인이 필요합니다.</strong><Link href="/login?returnTo=%2Fadmin" className="primary-button">로그인하기</Link></div></main>;
+  if (!isAdmin) return <main id="main-content" className="store-main page-main"><div className="empty-state"><strong>관리자 권한이 없는 계정입니다.</strong><p>쇼핑몰 회원 기능은 마이페이지에서 이용해 주세요.</p><Link href="/mypage" className="primary-button">마이페이지로 이동</Link></div></main>;
 
   return (
-    <main className="admin-page">
+    <main id="main-content" className="admin-page">
       <aside className="admin-sidebar">
         <div className="admin-logo"><span className="brand-mark">JH</span><div><strong>진흥몰 관리자</strong><small>ADMIN CONSOLE</small></div></div>
-        <nav>
-          <button className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}>상품 관리</button>
-          <button className={tab === "orders" ? "active" : ""} onClick={() => setTab("orders")}>주문 관리{newCount > 0 && <b>{newCount}</b>}</button>
-          <button className={tab === "customers" ? "active" : ""} onClick={() => setTab("customers")}>고객 관리</button>
-          <button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>계정 보안</button>
+        <nav aria-label="관리자 메뉴">
+          <button type="button" aria-pressed={tab === "products"} className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}>상품 관리</button>
+          <button type="button" aria-pressed={tab === "orders"} className={tab === "orders" ? "active" : ""} onClick={() => setTab("orders")}>주문 관리{newCount > 0 && <b>{newCount}</b>}</button>
+          <button type="button" aria-pressed={tab === "customers"} className={tab === "customers" ? "active" : ""} onClick={() => setTab("customers")}>고객 관리</button>
+          <button type="button" aria-pressed={tab === "settings"} className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>주문·입금 설정</button>
+          <button type="button" aria-pressed={tab === "security"} className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>계정 보안</button>
         </nav>
-        <a href="/">← 쇼핑몰로 돌아가기</a>
+        <Link href="/">← 쇼핑몰로 돌아가기</Link>
       </aside>
       <section className="admin-content">
         <header><div><p>ADMIN</p><h1>운영 현황</h1></div><div className="admin-user">{user.email}<span>진</span></div></header>
-        {adminError && <div className="admin-alert"><span>!</span><div><strong>{adminError}</strong><p>관리자 권한과 Supabase 연결 상태를 확인해 주세요.</p></div></div>}
+        {adminError && <div className="admin-alert" role="alert"><span aria-hidden="true">!</span><div><strong>{adminError}</strong><p>관리자 권한과 Supabase 연결 상태를 확인해 주세요.</p></div></div>}
         {newCount > 0 && <div className="admin-new-order-alert"><div><strong>새 주문 {newCount}건이 있습니다.</strong><p>주문 내용을 확인한 뒤 확인 완료를 눌러 주세요.</p></div><button type="button" onClick={() => void markOrdersSeen()}>새 주문 확인 완료</button></div>}
         <section className="admin-metrics"><article><span>오늘 주문</span><strong>{metrics.today}건</strong><small>오늘 접수된 주문</small></article><article><span>입금 대기</span><strong>{metrics.pending}건</strong><small>무통장입금 확인 전</small></article><article><span>배송 준비</span><strong>{metrics.preparing}건</strong><small>운송장 발급 대기</small></article><article><span>재고 확인</span><strong>{products.filter((product) => product.stock === "확인 필요").length}개</strong><small>재고 확인 필요 상품</small></article></section>
-        <div className="admin-tabs"><button className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}>상품 관리</button><button className={tab === "orders" ? "active" : ""} onClick={() => setTab("orders")}>주문 관리</button><button className={tab === "customers" ? "active" : ""} onClick={() => setTab("customers")}>고객 관리</button><button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>계정 보안</button></div>
+        <div className="admin-tabs" role="group" aria-label="관리 화면 전환"><button type="button" aria-pressed={tab === "products"} className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}>상품 관리</button><button type="button" aria-pressed={tab === "orders"} className={tab === "orders" ? "active" : ""} onClick={() => setTab("orders")}>주문 관리</button><button type="button" aria-pressed={tab === "customers"} className={tab === "customers" ? "active" : ""} onClick={() => setTab("customers")}>고객 관리</button><button type="button" aria-pressed={tab === "settings"} className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>주문·입금 설정</button><button type="button" aria-pressed={tab === "security"} className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>계정 보안</button></div>
 
         {tab === "products" && <section className="admin-table-panel">
-          <div className="panel-heading"><div><h2>상품 관리</h2><p>70개 상품의 가격, 색상, 부쉬·재고와 판매 상태를 관리합니다.</p></div><button type="button" className="primary-button" onClick={() => { setProductDraft({ ...emptyProductDraft }); setProductMessage(""); setImageUploadMessage(""); }}>+ 상품 등록</button></div>
+          <div className="panel-heading"><div><h2>상품 관리</h2><p>{adminProducts.length}개 상품의 가격, 색상, 부쉬·재고와 판매 상태를 관리합니다.</p></div><button type="button" className="primary-button" onClick={() => { setProductDraft({ ...emptyProductDraft }); setProductMessage(""); setImageUploadMessage(""); }}>+ 상품 등록</button></div>
           {productMessage && <p className="admin-product-message">{productMessage}</p>}
           {productDraft && <form className="admin-product-form" onSubmit={saveProduct}>
             <div className="admin-product-form-head"><div><strong>{productDraft.id ? "상품 수정" : "새 상품 등록"}</strong><span>필수 정보와 판매 상태를 입력해 주세요.</span></div><button type="button" className="line-button" onClick={() => setProductDraft(null)}>닫기</button></div>
@@ -340,7 +468,23 @@ export default function AdminPage() {
           {productsLoading ? <div className="empty-state"><strong>상품 정보를 불러오고 있습니다.</strong></div> : <div className="admin-table product-admin-table"><div className="table-row table-head"><span>상품</span><span>판매가</span><span>단위·부쉬</span><span>재고·상태</span><span>관리</span></div>{visibleAdminProducts.map((product) => <div className={`table-row ${product.is_active ? "" : "inactive"}`} key={product.id}><span className="admin-product">{product.image_url ? <img src={product.image_url} alt="" /> : <div className="admin-product-placeholder">{product.name}</div>}<span><strong>{product.name}</strong><small>{product.sku} · {product.colors.map((color) => color.name).join(", ") || "색상 미등록"}</small></span></span><span>{formatPrice(product.price)}</span><span>{product.sales_unit} · {product.bush_count ? `${product.bush_count}부쉬` : "부쉬 미설정"}</span><span>{product.stock_quantity}개 · {product.is_active ? "판매중" : "숨김"}</span><span><button type="button" className="line-button" onClick={() => editProduct(product)}>수정</button></span></div>)}</div>}
         </section>}
 
-        {tab === "orders" && <section className="admin-table-panel"><div className="panel-heading"><div><h2>주문 관리</h2><p>입금 확인 후 상태를 변경하고 택배사와 운송장을 입력합니다.</p></div><div className="admin-order-actions"><button className="line-button" type="button" onClick={() => void enableBrowserNotifications()}>브라우저 알림 켜기</button><button className="secondary-button" type="button" onClick={() => void loadOrders()}>새로고침</button></div></div>{notificationMessage && <p className="admin-notification-note">{notificationMessage}</p>}{ordersLoading ? <div className="empty-state"><strong>주문을 불러오고 있습니다.</strong></div> : adminError ? <div className="empty-state"><strong>관리자 권한을 확인해 주세요.</strong></div> : orders.length === 0 ? <div className="empty-state"><strong>아직 주문이 없습니다.</strong></div> : <div className="admin-order-list">{orders.map((order) => { const draft = drafts[order.id] || { status: order.status, courier: "", tracking: "" }; return <article className={order.is_new ? "new-order" : ""} key={order.id}><div className="admin-order-primary"><span>{order.is_new && <b>NEW</b>} {new Date(order.created_at).toLocaleString("ko-KR")}</span><strong>{order.order_number}</strong><p>{order.customer_name} · {order.customer_phone}</p><small>입금자 {order.depositor_name} · {order.item_count}종 · {formatPrice(order.total_amount)}</small></div><label><span>상태</span><select value={draft.status} onChange={(event) => updateDraft(order.id, "status", event.target.value)}>{statuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><span>택배사</span><input value={draft.courier} onChange={(event) => updateDraft(order.id, "courier", event.target.value)} placeholder="예: CJ대한통운" /></label><label><span>운송장</span><input value={draft.tracking} onChange={(event) => updateDraft(order.id, "tracking", event.target.value)} inputMode="numeric" /></label><button type="button" className="approve-button" disabled={savingId === order.id} onClick={() => void saveOrder(order.id)}>{savingId === order.id ? "저장 중" : "변경 저장"}</button></article>; })}</div>}</section>}
+        {tab === "orders" && <section className="admin-table-panel">
+          <div className="panel-heading"><div><h2>주문 관리</h2><p>입금 확인 후 상태를 변경하고 배송 정보를 입력합니다.</p></div><div className="admin-order-actions"><button className="line-button" type="button" onClick={() => void enableBrowserNotifications()}>브라우저 알림 켜기</button><button className="secondary-button" type="button" onClick={() => void loadOrders()}>새로고침</button></div></div>
+          {notificationMessage && <p className="admin-notification-note" role="status">{notificationMessage}</p>}
+          {ordersLoading ? <div className="empty-state"><strong>주문을 불러오고 있습니다.</strong></div> : orders.length === 0 ? <div className="empty-state"><strong>아직 주문이 없습니다.</strong></div> : <div className="admin-order-list">{orders.map((order) => {
+            const draft = drafts[order.id] || { status: order.status, courier: "", tracking: "" };
+            const address = order.shipping_address || {};
+            const addressText = [address.postalCode, address.address1, address.address2].filter(Boolean).join(" ");
+            return <article className={order.is_new ? "new-order" : ""} key={order.id}>
+              <div className="admin-order-summary">
+                <div className="admin-order-primary"><span>{order.is_new && <b>NEW</b>} {new Date(order.created_at).toLocaleString("ko-KR")}</span><strong>{order.order_number}</strong><p>{order.customer_name} · {order.customer_phone}</p><small>{order.customer_email || "이메일 없음"} · 입금자 {order.depositor_name}</small></div>
+                <div className="admin-order-amount"><span>{order.item_count}종</span><strong>{formatPrice(order.total_amount)}</strong><small>상품 {formatPrice(order.subtotal)}{order.shipping_fee > 0 ? ` + 배송 ${formatPrice(order.shipping_fee)}` : " · 무료배송"}</small></div>
+              </div>
+              <details className="admin-order-details"><summary>상품·배송지 상세</summary><div className="admin-order-detail-body"><div className="admin-order-items">{order.items.map((item, index) => <div key={`${item.sku}-${item.color_name || "default"}-${index}`}><span><strong>{item.product_name}</strong><small>{item.sku} · {item.color_name || "기본 색상"} · {item.quantity}{item.sales_unit}</small></span><b>{formatPrice(item.line_total)}</b></div>)}</div><div className="admin-order-address"><strong>배송지</strong><p>{address.receiver || order.customer_name} · {address.phone || order.customer_phone}</p><span>{addressText || "주소 미등록"}</span>{address.memo && <small>배송 메모 · {address.memo}</small>}</div></div></details>
+              <div className="admin-order-controls"><label><span>상태</span><select value={draft.status} onChange={(event) => updateDraft(order.id, "status", event.target.value)}>{statuses.filter(([value]) => (statusTransitions[order.status] || [order.status]).includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><span>택배사</span><input value={draft.courier} onChange={(event) => updateDraft(order.id, "courier", event.target.value)} placeholder="예: CJ대한통운" maxLength={100} disabled={order.status === "cancelled"} /></label><label><span>운송장</span><input value={draft.tracking} onChange={(event) => updateDraft(order.id, "tracking", event.target.value)} inputMode="numeric" maxLength={100} disabled={order.status === "cancelled"} /></label><button type="button" className="approve-button" disabled={savingId === order.id || order.status === "cancelled"} onClick={() => void saveOrder(order.id)}>{savingId === order.id ? "저장 중" : "변경 저장"}</button></div>
+            </article>;
+          })}</div>}
+        </section>}
 
         {tab === "customers" && <section className="admin-table-panel">
           <div className="panel-heading"><div><h2>고객 관리</h2><p>가입 고객의 연락처, 배송지와 주문 실적을 확인하고 내부 메모를 관리합니다.</p></div><button type="button" className="secondary-button" onClick={() => void loadCustomers()}>새로고침</button></div>
@@ -359,7 +503,19 @@ export default function AdminPage() {
           })}</div>}
         </section>}
 
-        {tab === "security" && <section className="admin-security-panel"><div><p>ACCOUNT SECURITY</p><h2>관리자 비밀번호 변경</h2><span>현재 비밀번호를 다시 확인한 후 새 비밀번호로 변경합니다. 비밀번호는 코드나 데이터베이스에 평문으로 저장되지 않습니다.</span></div><form onSubmit={submitPassword} className="admin-security-form"><label><span>현재 비밀번호</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required /></label><label><span>새 비밀번호</span><input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} required /></label><label><span>새 비밀번호 확인</span><input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} required /></label>{passwordError && <p className="form-error">{passwordError}</p>}{passwordMessage && <p className="form-success">{passwordMessage}</p>}<button type="submit" className="primary-button" disabled={passwordSaving}>{passwordSaving ? "변경 중" : "비밀번호 변경"}</button></form></section>}
+        {tab === "settings" && <section className="admin-settings-panel">
+          <div className="panel-heading"><div><h2>주문·입금 설정</h2><p>무통장입금 계좌와 배송비 정책을 주문서에 바로 반영합니다.</p></div></div>
+          {settingsLoading ? <div className="empty-state"><strong>설정을 불러오고 있습니다.</strong></div> : <form className="admin-settings-form" onSubmit={saveStoreSettings}>
+            <fieldset><legend>주문 운영</legend><div className="admin-settings-grid"><label><span>상점명</span><input value={storeSettings.storeName} onChange={(event) => updateStoreSettings("storeName", event.target.value)} maxLength={100} required /></label><label><span>최소 주문금액</span><input type="number" min="0" max="100000000" step="1000" value={storeSettings.minimumOrderAmount} onChange={(event) => updateStoreSettings("minimumOrderAmount", event.target.value)} required /><small>0원이면 최소 주문금액 제한을 사용하지 않습니다.</small></label><label><span>고객 문의 전화</span><input value={storeSettings.supportPhone} onChange={(event) => updateStoreSettings("supportPhone", event.target.value)} inputMode="tel" maxLength={30} /></label></div><label className="admin-settings-switch"><input type="checkbox" checked={storeSettings.orderingEnabled} onChange={(event) => updateStoreSettings("orderingEnabled", event.target.checked)} /><span>고객 주문 접수 허용</span><small>끄면 장바구니는 유지되지만 새 주문 접수는 중지됩니다.</small></label></fieldset>
+            <fieldset><legend>무통장입금 계좌</legend><div className="admin-settings-grid"><label><span>은행명</span><input value={storeSettings.bankName} onChange={(event) => updateStoreSettings("bankName", event.target.value)} placeholder="예: 국민은행" maxLength={60} /></label><label><span>계좌번호</span><input value={storeSettings.bankAccount} onChange={(event) => updateStoreSettings("bankAccount", event.target.value)} placeholder="숫자와 하이픈" maxLength={80} /></label><label><span>예금주</span><input value={storeSettings.accountHolder} onChange={(event) => updateStoreSettings("accountHolder", event.target.value)} maxLength={60} /></label></div></fieldset>
+            <fieldset><legend>배송비 정책</legend><div className="admin-settings-grid"><label><span>기본 배송비</span><input type="number" min="0" max="1000000" step="100" value={storeSettings.shippingFee} onChange={(event) => updateStoreSettings("shippingFee", event.target.value)} required /></label><label><span>무료배송 기준</span><input type="number" min="0" max="100000000" step="1000" value={storeSettings.freeShippingThreshold} onChange={(event) => updateStoreSettings("freeShippingThreshold", event.target.value)} required /><small>0원이면 무료배송 기준을 사용하지 않습니다.</small></label></div></fieldset>
+            <label className="admin-settings-notice"><span>주문서 안내 문구</span><textarea value={storeSettings.orderNotice} onChange={(event) => updateStoreSettings("orderNotice", event.target.value)} rows={4} maxLength={500} placeholder="입금·출고 관련 안내를 입력하세요." /></label>
+            {settingsMessage && <p className="form-success" role="status">{settingsMessage}</p>}
+            <button type="submit" className="primary-button" disabled={settingsSaving}>{settingsSaving ? "저장 중" : "설정 저장"}</button>
+          </form>}
+        </section>}
+
+        {tab === "security" && <section className="admin-security-panel"><div><p>ACCOUNT SECURITY</p><h2>관리자 비밀번호 변경</h2><span>현재 비밀번호를 다시 확인한 후 새 비밀번호로 변경합니다. 비밀번호는 코드나 데이터베이스에 평문으로 저장되지 않습니다.</span></div><form onSubmit={submitPassword} className="admin-security-form"><label><span>현재 비밀번호</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required /></label><label><span>새 비밀번호</span><input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} required /></label><label><span>새 비밀번호 확인</span><input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} required /></label>{passwordError && <p className="form-error" role="alert">{passwordError}</p>}{passwordMessage && <p className="form-success" role="status">{passwordMessage}</p>}<button type="submit" className="primary-button" disabled={passwordSaving}>{passwordSaving ? "변경 중" : "비밀번호 변경"}</button></form></section>}
       </section>
     </main>
   );

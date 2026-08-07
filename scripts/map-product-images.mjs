@@ -1,13 +1,33 @@
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 const projectRoot = resolve(import.meta.dirname, "..");
+let photoRoot = resolve(projectRoot, "상품 첫화면 사진");
+let outputPath = resolve(projectRoot, "supabase/product-image-map.json");
+const args = process.argv.slice(2);
+
+for (let index = 0; index < args.length; index += 1) {
+  const argument = args[index];
+  if (argument === "--photo-root" || argument === "--output") {
+    const value = args[index + 1];
+    if (!value || value.startsWith("--")) throw new Error(`${argument} 뒤에 경로를 입력해주세요.`);
+    index += 1;
+    if (argument === "--photo-root") photoRoot = resolve(value);
+    if (argument === "--output") outputPath = resolve(value);
+  } else if (argument.startsWith("--photo-root=")) {
+    photoRoot = resolve(argument.slice("--photo-root=".length));
+  } else if (argument.startsWith("--output=")) {
+    outputPath = resolve(argument.slice("--output=".length));
+  } else {
+    throw new Error(`알 수 없는 옵션입니다: ${argument}`);
+  }
+}
+
 const seedSource = readFileSync(resolve(projectRoot, "app/lib/oraedam-products.ts"), "utf8");
 const seedMatch = seedSource.match(/export const productSeeds: ProductSeed\[\] = (\[[\s\S]*\]);/);
 if (!seedMatch) throw new Error("상품 데이터 배열을 찾지 못했습니다.");
 
 const seeds = JSON.parse(seedMatch[1]);
-const photoRoot = resolve(projectRoot, "상품 첫화면 사진");
 const photos = readdirSync(photoRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name.startsWith("photo"))
   .sort((a, b) => a.name.localeCompare(b.name, "ko"))
@@ -69,6 +89,6 @@ if (mappings.length !== seeds.length || unused.length > 0) {
   throw new Error(`매칭 불일치: 상품 ${mappings.length}/${seeds.length}, 미사용 사진 ${unused.length}`);
 }
 
-const outputPath = resolve(projectRoot, "supabase/product-image-map.json");
+mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, JSON.stringify(mappings, null, 2), "utf8");
 console.log(JSON.stringify({ products: seeds.length, photos: photos.length, matched: mappings.length, unused: unused.length, outputPath }));

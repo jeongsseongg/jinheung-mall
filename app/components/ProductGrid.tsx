@@ -31,6 +31,8 @@ const colorGroup = (product: Product) => {
   return "other";
 };
 
+const isSoldOut = (product: Product) => product.stockQuantity !== undefined && product.stockQuantity <= 0 && product.stock !== "확인 필요";
+
 export function ProductGrid({ compact = false }: { compact?: boolean }) {
   const { products } = useProducts();
   const [category, setCategory] = useState("전체");
@@ -58,7 +60,7 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
       const priceMatch = product.consumerPrice >= minimum && product.consumerPrice <= maximum;
       const colorMatch = selectedColor === "all" || colorGroup(product) === selectedColor;
       const stockMatch = stockFilter === "all"
-        || (stockFilter === "available" && (product.stockQuantity ?? 0) > 0)
+        || (stockFilter === "available" && !isSoldOut(product))
         || (stockFilter === "exclude-low" && product.stock !== "소량" && product.stock !== "확인 필요");
       return categoryMatch && priceMatch && colorMatch && stockMatch;
     });
@@ -69,7 +71,7 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
       if (sort === "new") return Number(Boolean(b.isNew)) - Number(Boolean(a.isNew));
       return (Number(Boolean(b.image)) - Number(Boolean(a.image))) || (b.monthlyOrders - a.monthlyOrders);
     });
-  }, [category, maxPrice, minPrice, selectedColor, sort, stockFilter]);
+  }, [category, maxPrice, minPrice, products, selectedColor, sort, stockFilter]);
 
   const setPriceRange = (minimum: number | null, maximum: number | null) => {
     setMinPrice(minimum === null ? "" : String(minimum));
@@ -112,14 +114,15 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
           <section className="filter-section">
             <h3>가격</h3>
             <div className="price-input-row">
-              <label><span className="sr-only">최소 가격</span><input type="number" min="0" max="3000" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="최소" /><b>원</b></label>
+              <label><span className="sr-only">최소 가격</span><input type="number" min="0" max="5000" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="최소" /><b>원</b></label>
               <i>~</i>
-              <label><span className="sr-only">최대 가격</span><input type="number" min="0" max="3000" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="최대" /><b>원</b></label>
+              <label><span className="sr-only">최대 가격</span><input type="number" min="0" max="5000" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="최대" /><b>원</b></label>
             </div>
             <div className="price-quick-grid">
               <button type="button" onClick={() => setPriceRange(null, 1000)}>1천원 이하</button>
               <button type="button" onClick={() => setPriceRange(1000, 2000)}>1천~2천원</button>
               <button type="button" onClick={() => setPriceRange(2000, 3000)}>2천~3천원</button>
+              <button type="button" onClick={() => setPriceRange(3000, 5000)}>3천~5천원</button>
               <button type="button" onClick={() => setPriceRange(null, null)}>전체 가격</button>
             </div>
           </section>
@@ -136,8 +139,8 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
           <section className="filter-section">
             <h3>재고 상태</h3>
             <label className="filter-radio"><input type="radio" name="stock" checked={stockFilter === "all"} onChange={() => setStockFilter("all")} /><span>전체</span><small>{products.length}</small></label>
-            <label className="filter-radio"><input type="radio" name="stock" checked={stockFilter === "available"} onChange={() => setStockFilter("available")} /><span>재고 보유 상품</span><small>{products.length}</small></label>
-            <label className="filter-radio"><input type="radio" name="stock" checked={stockFilter === "exclude-low"} onChange={() => setStockFilter("exclude-low")} /><span>소량 재고 제외</span><small>{products.filter((product) => product.stock !== "소량").length}</small></label>
+            <label className="filter-radio"><input type="radio" name="stock" checked={stockFilter === "available"} onChange={() => setStockFilter("available")} /><span>주문 가능 상품</span><small>{products.filter((product) => !isSoldOut(product)).length}</small></label>
+            <label className="filter-radio"><input type="radio" name="stock" checked={stockFilter === "exclude-low"} onChange={() => setStockFilter("exclude-low")} /><span>소량 재고 제외</span><small>{products.filter((product) => product.stock !== "소량" && product.stock !== "확인 필요").length}</small></label>
           </section>
 
           <section className="filter-section">
@@ -162,7 +165,7 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
           <div className="catalog-heading-row">
             <div>
               <h2 id="catalog-heading">{category === "전체" ? "전체 상품" : category}</h2>
-              <span>표시 가격은 VAT가 포함된 예시 가격입니다.</span>
+              <span>표시 가격은 VAT가 포함된 판매가입니다.</span>
             </div>
             <label className="sort-select">정렬
               <select value={sort} onChange={(event) => setSort(event.target.value)}>

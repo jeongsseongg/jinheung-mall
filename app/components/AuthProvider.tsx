@@ -43,7 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     async signIn(email, password) {
-      const { error } = await getSupabaseBrowserClient().auth.signInWithPassword({ email, password });
+      const identifier = email.trim().toLowerCase();
+      const loginEmail = identifier.includes("@") ? identifier : `${identifier}@login.jinheung.local`;
+      const { error } = await getSupabaseBrowserClient().auth.signInWithPassword({ email: loginEmail, password });
       return { error: error?.message ?? null };
     },
     async signUp({ email, password, name, phone }) {

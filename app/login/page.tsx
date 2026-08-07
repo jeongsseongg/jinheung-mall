@@ -7,7 +7,7 @@ import { useAuth } from "@/app/components/AuthProvider";
 type Mode = "login" | "signup";
 
 const authMessage = (message: string) => {
-  if (message.includes("Invalid login credentials")) return "이메일 또는 비밀번호가 맞지 않습니다.";
+  if (message.includes("Invalid login credentials")) return "아이디·이메일 또는 비밀번호가 맞지 않습니다.";
   if (message.includes("Email not confirmed")) return "이메일 인증을 먼저 완료해주세요.";
   if (message.includes("User already registered")) return "이미 가입된 이메일입니다.";
   if (message.includes("Password should be")) return "비밀번호는 6자 이상 입력해주세요.";
@@ -49,8 +49,9 @@ export default function LoginPage() {
       return;
     }
 
+    const loginIdentifier = email.trim();
     const result = mode === "login"
-      ? await signIn(email.trim(), password)
+      ? await signIn(loginIdentifier, password)
       : await signUp({ email: email.trim(), password, name: name.trim(), phone: phone.trim() });
 
     if (result.error) {
@@ -60,7 +61,7 @@ export default function LoginPage() {
       setMessage("가입 확인 메일을 보냈습니다. 메일의 인증 링크를 누른 뒤 로그인해주세요.");
       setMode("login");
     } else {
-      router.replace("/mypage");
+      router.replace(mode === "login" && loginIdentifier.toLowerCase() === "jinflower" ? "/admin" : "/mypage");
     }
     setSubmitting(false);
   };
@@ -80,7 +81,7 @@ export default function LoginPage() {
             <label><span>이름</span><input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="주문자 이름" required /></label>
             <label><span>전화번호</span><input value={phone} onChange={(event) => setPhone(event.target.value)} inputMode="tel" autoComplete="tel" placeholder="010-0000-0000" required /></label>
           </>}
-          <label><span>이메일</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="example@email.com" required /></label>
+          <label><span>{mode === "login" ? "아이디 또는 이메일" : "이메일"}</span><input type={mode === "login" ? "text" : "email"} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" placeholder={mode === "login" ? "아이디 또는 example@email.com" : "example@email.com"} required /></label>
           <label><span>비밀번호</span><input type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder="6자 이상 입력" required /></label>
           {message && <p className={`auth-message ${isError ? "error" : "success"}`} role="status">{message}</p>}
           <button type="submit" className="primary-button full" disabled={submitting || authLoading}>{submitting ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}</button>

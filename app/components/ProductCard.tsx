@@ -13,7 +13,7 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="product-card">
       <div className="product-image-wrap">
         <a href={`/products/${product.id}`} aria-label={`${product.name} 상세보기`} className={product.image ? "product-image-link" : "product-image-placeholder"}>
-          {product.image ? <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" /> : <><small>색상 선택 가능</small><strong>{product.name}</strong><span>{product.color}</span></>}
+          {product.image ? <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" loading="lazy" decoding="async" /> : <><small>색상 선택 가능</small><strong>{product.name}</strong><span>{product.color}</span></>}
         </a>
         <button
           type="button"

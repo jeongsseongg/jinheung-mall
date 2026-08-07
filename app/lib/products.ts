@@ -50,15 +50,21 @@ const productImages: Record<string, string> = {
   "부케카네션": "/products/bouquet-carnation-24bush.png",
 };
 
+const supabaseStorageBase = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/product-images`
+  : null;
+
 export const products: Product[] = productSeeds.map((seed, index) => {
   const id = `oraedam-${String(index + 1).padStart(2, "0")}`;
+  const sku = `JH-FL-${String(index + 1).padStart(3, "0")}`;
 
   return {
     id,
+    sku,
     name: seed.name,
     category: categoryFor(seed.unit),
     color: seed.color,
-    image: productImages[seed.name] ?? null,
+    image: supabaseStorageBase ? `${supabaseStorageBase}/${sku}.png` : productImages[seed.name] ?? null,
     consumerPrice: seed.basePrice,
     unit: seed.unit,
     salesUnit: "단",

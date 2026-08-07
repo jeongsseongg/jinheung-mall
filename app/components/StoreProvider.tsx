@@ -2,18 +2,14 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-type AccountRole = "guest" | "member";
-
 type StoreContextValue = {
   cart: Record<string, number>;
   favorites: string[];
-  role: AccountRole;
   cartCount: number;
   addToCart: (id: string, quantity?: number) => void;
   setQuantity: (id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
   toggleFavorite: (id: string) => void;
-  setRole: (role: AccountRole) => void;
   notice: string;
 };
 
@@ -22,16 +18,13 @@ const StoreContext = createContext<StoreContextValue | null>(null);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [favorites, setFavorites] = useState<string[]>(["peony-blush", "eucalyptus-gray"]);
-  const [role, setRoleState] = useState<AccountRole>("guest");
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const savedCart = window.localStorage.getItem("jinheung-cart");
     const savedFavorites = window.localStorage.getItem("jinheung-favorites");
-    const savedRole = window.localStorage.getItem("jinheung-role") as AccountRole | null;
     if (savedCart) setCart(JSON.parse(savedCart));
     if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
-    if (savedRole === "member") setRoleState(savedRole);
   }, []);
 
   useEffect(() => {
@@ -76,25 +69,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const setRole = (nextRole: AccountRole) => {
-    setRoleState(nextRole);
-    window.localStorage.setItem("jinheung-role", nextRole);
-  };
-
   const value = useMemo(
     () => ({
       cart,
       favorites,
-      role,
       cartCount: Object.values(cart).reduce((sum, quantity) => sum + quantity, 0),
       addToCart,
       setQuantity,
       removeFromCart,
       toggleFavorite,
-      setRole,
       notice,
     }),
-    [cart, favorites, role, notice],
+    [cart, favorites, notice],
   );
 
   return (

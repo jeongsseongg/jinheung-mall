@@ -38,6 +38,7 @@ img { display: block; max-width: 100%; }
 .reference-brand { font-size: 28px; font-weight: 800; letter-spacing: -.065em; }
 .reference-nav { display: flex; align-items: center; justify-content: flex-end; gap: 30px; }
 .reference-nav a { position: relative; font-size: 13px; font-weight: 650; }
+.reference-nav .nav-signout { padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 650; cursor: pointer; }
 .reference-nav a.active::after { content: ""; height: 2px; position: absolute; left: 0; right: 0; bottom: -11px; background: var(--ink); }
 .reference-cart { padding-right: 8px; }
 .reference-cart b { min-width: 18px; height: 18px; padding: 0 5px; position: absolute; top: -10px; right: -10px; display: grid; place-items: center; border-radius: 9px; background: var(--ink); color: #fff; font-size: 9px; }
@@ -320,6 +321,10 @@ img { display: block; max-width: 100%; }
 .auth-card > p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .auth-form { margin-top: 26px; display: grid; gap: 15px; }
 .auth-form .primary-button { margin-top: 5px; }
+.auth-form .primary-button:disabled { opacity: .55; cursor: wait; }
+.auth-message { margin: 0; padding: 10px 12px; border-radius: 8px; font-size: 11px; line-height: 1.5; }
+.auth-message.error { background: #fff0f0; color: #a92d2d; }
+.auth-message.success { background: var(--green-soft); color: var(--green); }
 .verification-mini { margin-top: 18px; padding: 15px; border-radius: 10px; background: var(--green-soft); }
 .verification-mini strong { font-size: 13px; }
 .verification-mini p { margin: 5px 0 8px; color: #617168; font-size: 11px; line-height: 1.5; }
@@ -358,6 +363,12 @@ img { display: block; max-width: 100%; }
 .profile-header p { color: #9fd1ba; font-size: 11px; font-weight: 700; }
 .profile-header h1 { margin: 4px 0; font-size: 24px; }
 .profile-header > div span:last-child { color: #b8b8bd; font-size: 11px; }
+.profile-signout { min-height: 38px; padding: 0 14px; border: 1px solid #55565b; border-radius: 8px; background: transparent; color: #fff; cursor: pointer; }
+.profile-editor { margin-bottom: 20px; padding: 25px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.profile-field-grid .wide-field { grid-column: 1 / -1; }
+.profile-save-row { margin-top: 20px; display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
+.profile-save-row p { margin: 0; color: var(--green); font-size: 11px; }
+.profile-save-row .primary-button:disabled { opacity: .55; cursor: wait; }
 .role-switch { min-height: 38px; padding: 0 13px; border: 1px solid #4d4d52; border-radius: 8px; background: transparent; color: #d7d7dc; font-size: 11px; cursor: pointer; }
 .month-summary { margin-bottom: 20px; }
 .month-summary small { color: var(--green); font-size: 10px; }

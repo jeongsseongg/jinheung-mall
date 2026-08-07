@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { StoreProvider, useStore } from "./StoreProvider";
+import { AuthProvider, useAuth } from "./AuthProvider";
 
 const navItems = [
   { href: "/", label: "전체상품" },
@@ -12,8 +13,9 @@ const navItems = [
 
 function Header() {
   const pathname = usePathname();
-  const { cartCount, role } = useStore();
-  const isLoggedIn = role !== "guest";
+  const { cartCount } = useStore();
+  const { user, loading, signOut } = useAuth();
+  const isLoggedIn = Boolean(user);
 
   return (
     <>
@@ -26,7 +28,8 @@ function Header() {
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>{item.label}</Link>
             ))}
-            <Link href={isLoggedIn ? "/mypage" : "/login"}>{isLoggedIn ? "마이페이지" : "로그인"}</Link>
+            <Link href={isLoggedIn ? "/mypage" : "/login"}>{loading ? "확인 중" : isLoggedIn ? "마이페이지" : "로그인"}</Link>
+            {isLoggedIn && <button type="button" className="nav-signout" onClick={() => void signOut()}>로그아웃</button>}
             <Link href="/cart" className="reference-cart">장바구니 <b>{cartCount}</b></Link>
           </nav>
         </div>
@@ -36,7 +39,7 @@ function Header() {
         <Link href="/products" className={pathname === "/products" ? "active" : ""}><span>⌕</span>검색</Link>
         <Link href="/favorites" className={pathname === "/favorites" ? "active" : ""}><span>♡</span>자주 주문</Link>
         <Link href="/cart" className={pathname === "/cart" ? "active" : ""}><span>▢</span>장바구니{cartCount > 0 && <b>{cartCount}</b>}</Link>
-        <Link href="/mypage" className={pathname === "/mypage" ? "active" : ""}><span>○</span>마이</Link>
+        <Link href={isLoggedIn ? "/mypage" : "/login"} className={pathname === "/mypage" || pathname === "/login" ? "active" : ""}><span>○</span>마이</Link>
       </nav>
     </>
   );
@@ -44,10 +47,11 @@ function Header() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <StoreProvider>
-      <Header />
-      {children}
-      <footer className="site-footer">
+    <AuthProvider>
+      <StoreProvider>
+        <Header />
+        {children}
+        <footer className="site-footer">
         <div>
           <strong>진흥몰</strong>
           <p>진흥조화가 직접 고르고 공급하는 조화 주문몰</p>
@@ -58,7 +62,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/admin">관리자</Link>
         </div>
         <small>현재 화면은 프론트엔드 시안이며 가격·VAT·배송 정책은 관리자 설정 연동 전 예시입니다.</small>
-      </footer>
-    </StoreProvider>
+        </footer>
+      </StoreProvider>
+    </AuthProvider>
   );
 }

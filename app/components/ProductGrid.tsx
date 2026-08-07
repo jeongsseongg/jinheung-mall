@@ -63,7 +63,7 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
       if (sort === "price-low") return a.consumerPrice - b.consumerPrice;
       if (sort === "price-high") return b.consumerPrice - a.consumerPrice;
       if (sort === "new") return Number(Boolean(b.isNew)) - Number(Boolean(a.isNew));
-      return b.monthlyOrders - a.monthlyOrders;
+      return (Number(Boolean(b.image)) - Number(Boolean(a.image))) || (b.monthlyOrders - a.monthlyOrders);
     });
   }, [category, maxPrice, minPrice, selectedColor, sort, stockFilter]);
 

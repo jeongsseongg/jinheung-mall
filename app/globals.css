@@ -184,7 +184,7 @@ img { display: block; max-width: 100%; }
 .sort-select select, .search-panel select, .order-filter select { height: 42px; padding: 0 34px 0 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); outline: 0; }
 .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 18px; }
 .product-image-wrap { position: relative; aspect-ratio: 1 / 1.04; border-radius: 0; background: #f1efec; overflow: hidden; }
-.product-image { width: 100%; height: 100%; object-fit: cover; transition: transform 260ms var(--ease-out); }
+.product-image { width: 100%; height: 100%; object-fit: cover; object-position: center 28%; transition: transform 260ms var(--ease-out); }
 .product-image-link { display: block; width: 100%; height: 100%; }
 .product-image-placeholder, .detail-image-placeholder { display: flex; flex-direction: column; justify-content: flex-end; width: 100%; height: 100%; padding: 22px; background: linear-gradient(145deg, #f7f5f1 0%, #e7eee8 100%); color: var(--ink); text-decoration: none; }
 .product-image-placeholder small, .detail-image-placeholder small { margin-bottom: auto; color: #6e786f; font-size: 10px; font-weight: 700; letter-spacing: .1em; }

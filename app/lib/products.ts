@@ -34,6 +34,19 @@ const categoryFor = (unit: string) => {
   return "부쉬";
 };
 
+const productImages: Record<string, string> = {
+  "믹스동백": "/products/mix-dongbaek-12bush.png",
+  "불국": "/products/bulguk-12bush.png",
+  "믹스백합": "/products/mix-baekhap-12bush.png",
+  "봉장미": "/products/bong-jangmi-12bush.png",
+  "믹스봉장미": "/products/mix-bong-jangmi-12bush.png",
+  "부케금잔화36": "/products/bouquet-geumjanhwa-36bush.png",
+  "별장미": "/products/byeol-jangmi-12bush.png",
+  "백합9": "/products/baekhap-9bush.png",
+  "부케장미24": "/products/bouquet-jangmi-24bush.png",
+  "부케카네션": "/products/bouquet-carnation-24bush.png",
+};
+
 export const products: Product[] = productSeeds.map((seed, index) => {
   const id = `oraedam-${String(index + 1).padStart(2, "0")}`;
 
@@ -42,7 +55,7 @@ export const products: Product[] = productSeeds.map((seed, index) => {
     name: seed.name,
     category: categoryFor(seed.unit),
     color: seed.color,
-    image: null,
+    image: productImages[seed.name] ?? null,
     consumerPrice: seed.basePrice,
     unit: seed.unit,
     salesUnit: "단",

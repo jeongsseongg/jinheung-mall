@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { products } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 
 export default function AdminPage() {
+  const { products } = useProducts();
   const [tab, setTab] = useState<"products" | "orders">("products");
 
   return (

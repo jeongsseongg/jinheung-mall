@@ -3,9 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatPrice, type Product } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 import { useStore } from "./StoreProvider";
 
-export function ProductDetailClient({ product }: { product: Product }) {
+export function ProductDetailClient({ product: fallbackProduct }: { product: Product }) {
+  const { products } = useProducts();
+  const product = products.find((item) => item.id === fallbackProduct.id) ?? fallbackProduct;
   const { addToCart, favorites, toggleFavorite } = useStore();
   const [quantity, setQuantity] = useState(product.minOrder);
   const colorOptions = product.color.split(",").map((color) => color.trim()).filter(Boolean);

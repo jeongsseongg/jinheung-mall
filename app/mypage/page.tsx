@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useStore } from "@/app/components/StoreProvider";
-import { formatPrice, products } from "@/app/lib/products";
+import { formatPrice } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 
 export default function MyPage() {
+  const { products } = useProducts();
   const { addToCart } = useStore();
   const frequent = products.slice(0, 3);
 

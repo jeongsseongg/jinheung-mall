@@ -2,6 +2,8 @@ import { productSeeds } from "./oraedam-products";
 
 export type Product = {
   id: string;
+  databaseId?: string;
+  sku?: string;
   name: string;
   category: string;
   color: string;
@@ -10,7 +12,8 @@ export type Product = {
   unit: string;
   salesUnit: "단" | "박스" | "카톤";
   minOrder: number;
-  stock: "충분" | "보통" | "소량";
+  stock: "충분" | "보통" | "소량" | "확인 필요";
+  stockQuantity?: number;
   isNew?: boolean;
   isBest?: boolean;
   monthlyOrders: number;
@@ -28,7 +31,7 @@ export const categories = [
   "시즌상품",
 ];
 
-const categoryFor = (unit: string) => {
+export const categoryFor = (unit: string) => {
   if (unit.includes("리스")) return "화분 · 화기";
   if (unit.includes("60cm") || unit.includes("55cm")) return "대형조화";
   return "부쉬";

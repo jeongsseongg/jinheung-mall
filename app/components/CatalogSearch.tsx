@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { formatPrice, products } from "@/app/lib/products";
+import { formatPrice } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 
 export function CatalogSearch() {
+  const { products } = useProducts();
   const searchRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
@@ -54,7 +56,7 @@ export function CatalogSearch() {
         <div className="search-preview-head"><strong>검색 미리보기</strong><span>최대 6개</span></div>
         {matches.length > 0 ? <div className="search-preview-grid">
           {matches.map((product) => <button type="button" className="search-preview-item" key={product.id} onPointerDown={(event) => { event.preventDefault(); openProduct(product.id); }}>
-            <img src={product.image} alt="" />
+            {product.image ? <img src={product.image} alt="" /> : <span className="search-preview-image-fallback">이미지 준비 중</span>}
             <span><small>{product.category} · {product.color}</small><strong>{product.name}</strong><b>{formatPrice(product.consumerPrice)}</b></span>
           </button>)}
         </div> : <p className="search-preview-empty">일치하는 상품이 없습니다.</p>}

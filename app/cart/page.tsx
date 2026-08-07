@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { formatPrice, products } from "@/app/lib/products";
+import { formatPrice } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 import { useStore } from "@/app/components/StoreProvider";
 
 export default function CartPage() {
+  const { products } = useProducts();
   const { cart, setQuantity, removeFromCart } = useStore();
   const items = products.filter((product) => cart[product.id]);
   const subtotal = items.reduce((sum, product) => sum + product.consumerPrice * cart[product.id], 0);

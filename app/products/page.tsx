@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { categories, products } from "@/app/lib/products";
+import { categories } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 import { ProductCard } from "@/app/components/ProductCard";
 
 export default function ProductsPage() {
+  const { products } = useProducts();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("전체");
   const [priceBand, setPriceBand] = useState("all");

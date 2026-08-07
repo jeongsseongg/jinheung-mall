@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { categories, products, type Product } from "@/app/lib/products";
+import { categories, type Product } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 import { ProductCard } from "./ProductCard";
 
 const colorOptions = [
@@ -31,6 +32,7 @@ const colorGroup = (product: Product) => {
 };
 
 export function ProductGrid({ compact = false }: { compact?: boolean }) {
+  const { products } = useProducts();
   const [category, setCategory] = useState("전체");
   const [sort, setSort] = useState("popular");
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -38,7 +40,7 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
   const [maxPrice, setMaxPrice] = useState("");
   const [selectedColor, setSelectedColor] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
-  const categoryCounts = useMemo(() => Object.fromEntries(categories.map((item) => [item, item === "전체" ? products.length : products.filter((product) => product.category === item).length])), []);
+  const categoryCounts = useMemo(() => Object.fromEntries(categories.map((item) => [item, item === "전체" ? products.length : products.filter((product) => product.category === item).length])), [products]);
 
   useEffect(() => {
     const mobileView = window.matchMedia("(max-width: 640px)");
@@ -55,7 +57,9 @@ export function ProductGrid({ compact = false }: { compact?: boolean }) {
       const categoryMatch = category === "전체" || product.category === category;
       const priceMatch = product.consumerPrice >= minimum && product.consumerPrice <= maximum;
       const colorMatch = selectedColor === "all" || colorGroup(product) === selectedColor;
-      const stockMatch = stockFilter !== "exclude-low" || product.stock !== "소량";
+      const stockMatch = stockFilter === "all"
+        || (stockFilter === "available" && (product.stockQuantity ?? 0) > 0)
+        || (stockFilter === "exclude-low" && product.stock !== "소량" && product.stock !== "확인 필요");
       return categoryMatch && priceMatch && colorMatch && stockMatch;
     });
 

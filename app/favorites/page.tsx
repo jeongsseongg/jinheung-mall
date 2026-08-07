@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { ProductCard } from "@/app/components/ProductCard";
 import { useStore } from "@/app/components/StoreProvider";
-import { products } from "@/app/lib/products";
+import { useProducts } from "@/app/lib/use-products";
 
 export default function FavoritesPage() {
+  const { products } = useProducts();
   const { favorites, addToCart } = useStore();
   const favoriteProducts = products.filter((product) => favorites.includes(product.id));
 

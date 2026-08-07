@@ -12,7 +12,6 @@ export default function CartPage() {
   const { cart, cartColors, cartSyncing, setQuantity, setCartColor, removeFromCart } = useStore();
   const items = products.filter((product) => cart[product.id]);
   const subtotal = items.reduce((sum, product) => sum + product.consumerPrice * cart[product.id], 0);
-  const estimatedVat = Math.round(subtotal * 0.1);
 
   return (
     <main className="store-main page-main narrow-page">
@@ -36,7 +35,7 @@ export default function CartPage() {
             </article>;
           })}
         </section>
-        <aside className="order-summary"><h2>결제 예상금액</h2><dl><div><dt>상품금액</dt><dd>{formatPrice(subtotal)}</dd></div><div><dt>예상 VAT</dt><dd>{formatPrice(estimatedVat)}</dd></div><div><dt>배송비</dt><dd>관리자 설정 예정</dd></div></dl><div className="total-row"><span>예상 합계</span><strong>{formatPrice(subtotal + estimatedVat)}</strong></div><p className="implementation-note">실제 VAT·배송비·최소주문 조건은 정책 확정 후 관리자 설정에 연결합니다.</p><button type="button" className="primary-button full">주문서 작성</button><Link href="/" className="text-link">상품 더 담기</Link></aside>
+        <aside className="order-summary"><h2>결제 예상금액</h2><dl><div><dt>상품금액</dt><dd>{formatPrice(subtotal)}</dd></div><div><dt>VAT</dt><dd>상품가격에 포함</dd></div><div><dt>배송비</dt><dd>현재 0원</dd></div></dl><div className="total-row"><span>결제 예정금액</span><strong>{formatPrice(subtotal)}</strong></div><p className="implementation-note">현재 무통장입금으로 주문을 접수합니다. 입금 계좌는 주문 확인 후 안내합니다.</p><Link href="/checkout" className="primary-button full">주문서 작성</Link><Link href="/" className="text-link">상품 더 담기</Link></aside>
       </div>}
     </main>
   );

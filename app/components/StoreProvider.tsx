@@ -18,6 +18,7 @@ type StoreContextValue = {
   setQuantity: (id: string, quantity: number) => void;
   setCartColor: (id: string, color: string) => void;
   removeFromCart: (id: string) => void;
+  clearCart: () => void;
   toggleFavorite: (id: string) => void;
   notice: string;
 };
@@ -180,6 +181,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const clearCart = () => {
+    setCart({});
+    setCartColors({});
+    lastSyncedPayload.current = "[]";
+    window.localStorage.removeItem("jinheung-cart-guest");
+    window.localStorage.removeItem("jinheung-cart-colors-guest");
+  };
+
   const toggleFavorite = (id: string) => {
     setFavorites((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
@@ -198,6 +207,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setQuantity,
     setCartColor,
     removeFromCart,
+    clearCart,
     toggleFavorite,
     notice,
   }), [cart, cartColors, cartSyncing, favorites, notice]);

@@ -7,8 +7,8 @@ export type Product = {
   color: string;
   image: string | null;
   consumerPrice: number;
-  businessPrice: number;
   unit: string;
+  salesUnit: "단" | "박스" | "카톤";
   minOrder: number;
   stock: "충분" | "보통" | "소량";
   isNew?: boolean;
@@ -44,8 +44,8 @@ export const products: Product[] = productSeeds.map((seed, index) => {
     color: seed.color,
     image: null,
     consumerPrice: seed.basePrice,
-    businessPrice: seed.basePrice,
     unit: seed.unit,
+    salesUnit: "단",
     minOrder: 1,
     stock: "충분",
     isNew: index < 12,

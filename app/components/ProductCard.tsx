@@ -13,7 +13,7 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="product-card">
       <div className="product-image-wrap">
         <a href={`/products/${product.id}`} aria-label={`${product.name} 상세보기`} className={product.image ? "product-image-link" : "product-image-placeholder"}>
-          {product.image ? <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" /> : <><small>오래담 조화</small><strong>{product.name}</strong><span>{product.color}</span></>}
+          {product.image ? <img src={product.image} alt={`${product.name} 예시 이미지`} className="product-image" /> : <><small>색상 선택 가능</small><strong>{product.name}</strong><span>{product.color}</span></>}
         </a>
         <button
           type="button"
@@ -29,7 +29,7 @@ export function ProductCard({ product }: { product: Product }) {
         <p className="product-code">{product.id.slice(0, 8).toUpperCase()}</p>
         <a href={`/products/${product.id}`} className="product-name">{product.name}</a>
         <div className="price-block"><strong>{formatPrice(product.consumerPrice)}</strong><span>VAT 포함</span></div>
-        <p className="unit-copy">최소 {product.minOrder}단 · {product.unit}</p>
+        <p className="unit-copy">최소 {product.minOrder}{product.salesUnit} · {product.unit}</p>
         <div className="product-order-row">
           <div className="quantity-stepper" aria-label={`${product.name} 수량`}>
             <button type="button" aria-label="수량 줄이기" onClick={() => setQuantity((value) => Math.max(product.minOrder, value - 1))}>−</button>

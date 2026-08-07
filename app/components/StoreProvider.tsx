@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-type AccountRole = "guest" | "consumer" | "business";
+type AccountRole = "guest" | "member";
 
 type StoreContextValue = {
   cart: Record<string, number>;
@@ -31,7 +31,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const savedRole = window.localStorage.getItem("jinheung-role") as AccountRole | null;
     if (savedCart) setCart(JSON.parse(savedCart));
     if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
-    if (savedRole) setRoleState(savedRole);
+    if (savedRole === "member") setRoleState(savedRole);
   }, []);
 
   useEffect(() => {

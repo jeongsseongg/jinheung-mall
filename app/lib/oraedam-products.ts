@@ -6,7 +6,7 @@ export type ProductSeed = {
   note: string;
 };
 
-// 오래담 단가표에서 가져온 70개 품목입니다. 사이트 표시는 basePrice의 2배로 계산합니다.
+// 관리자에서 관리할 70개 조화 품목의 초기 데이터입니다.
 export const productSeeds: ProductSeed[] = [
   {
     "name": "카라",
@@ -499,4 +499,3 @@ export const productSeeds: ProductSeed[] = [
     "note": "별표/취소 표시 있음"
   }
 ];
-
